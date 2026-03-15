@@ -1,0 +1,7 @@
+name: "Grand Rapids area events"
+url: "https://www.dev.brya.com"
+
+turns:
+  - send: "what events are near grand rapids?"
+    expect:
+      judge: "The response should list events located in or near Grand Rapids, MI (not events in other cities), or ask a clarifying question about the user's location or preferences."

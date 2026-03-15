@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run all conversations",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Run conversation file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "args": ["${input:yamlFile}"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Run all conversations (headed)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "HEADLESS": "0"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "yamlFile",
+      "type": "promptString",
+      "description": "Conversation YAML file to run",
+      "default": "conversations/example.yaml"
+    }
+  ]
+}

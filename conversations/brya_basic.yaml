@@ -1,0 +1,11 @@
+name: "Brya basic chat flow"
+url: "https://www.dev.brya.com"
+
+turns:
+  - send: "Hi, what can you help me with?"
+    expect:
+      judge: "The response should explain how it can help the user find social events or activities and connect with people"
+
+  - send: "I'm looking for outdoor activities in NYC"
+    expect:
+      judge: "The response should acknowledge the interest in outdoor activities and either list relevant events/suggestions or ask a clarifying follow-up question"
