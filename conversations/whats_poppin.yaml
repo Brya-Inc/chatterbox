@@ -1,0 +1,18 @@
+name: "Slang weekend events query"
+
+turns:
+  - send: "What's poppin this weekend?"
+    expect:
+      judge: |
+        The response should demonstrate that Sage understood the slang
+        "What's poppin" as a casual way of asking what events are happening.
+        It should list or describe specific events occurring this weekend
+        (Saturday and Sunday of the current week). Validate that any dates
+        or date references in the response correspond to the current weekend.
+        Today's date is {TODAY}.
+
+        For reference, here are the events actually listed on the platform:
+        {EVENTS}
+
+        If the response cites specific events, verify they appear in the list above.
+        If no weekend events exist in the list, the response should honestly say so.

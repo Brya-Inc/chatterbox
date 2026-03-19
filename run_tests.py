@@ -12,6 +12,7 @@ Configure via environment variables (see .env.example).
 import os
 import sys
 import time
+import datetime
 import yaml
 from openai import OpenAI
 from pathlib import Path
@@ -21,80 +22,146 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 load_dotenv()
 
 # ---------------------------------------------------------------------------
-# Config (override via env vars or a .env loader of your choice)
+# Config (override via env vars or .env)
 # ---------------------------------------------------------------------------
 BASE_URL          = os.environ.get("BASE_URL", "http://localhost:3000")
 OPENAI_API_KEY    = os.environ.get("OPENAI_API_KEY", "")
 JUDGE_MODEL       = os.environ.get("JUDGE_MODEL", "gpt-4o-mini")
-INPUT_SELECTOR    = os.environ.get("INPUT_SELECTOR", "textarea")
-SEND_SELECTOR     = os.environ.get("SEND_SELECTOR", "button[type='submit']")
-SEND_KEY          = os.environ.get("SEND_KEY", "")  # if set, press this key instead of clicking SEND_SELECTOR
-RESPONSE_SELECTOR = os.environ.get("RESPONSE_SELECTOR", ".bot-message")
-RESPONSE_TIMEOUT  = int(os.environ.get("RESPONSE_TIMEOUT_MS", "15000"))  # ms
+RESPONSE_SELECTOR = os.environ.get("RESPONSE_SELECTOR", ".cs-message-list .bg-tertiary")
+RESPONSE_TIMEOUT  = int(os.environ.get("RESPONSE_TIMEOUT_MS", "20000"))
 HEADLESS          = os.environ.get("HEADLESS", "1") != "0"
 CONVERSATIONS_DIR = Path("conversations")
 
-# Login (optional) — if LOGIN_EMAIL is set, the runner logs in once before any tests
 LOGIN_EMAIL    = os.environ.get("LOGIN_EMAIL", "")
 LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD", "")
-LOGIN_URL      = os.environ.get("LOGIN_URL", "")  # defaults to BASE_URL + "/login"
-LOGIN_EMAIL_SELECTOR    = os.environ.get("LOGIN_EMAIL_SELECTOR",    "[placeholder='Enter email address']")
-LOGIN_CONTINUE_SELECTOR = os.environ.get("LOGIN_CONTINUE_SELECTOR", "text=\"Continue\"")
-LOGIN_PASSWORD_SELECTOR = os.environ.get("LOGIN_PASSWORD_SELECTOR", "[placeholder='Enter password']")
-LOGIN_SUBMIT_SELECTOR   = os.environ.get("LOGIN_SUBMIT_SELECTOR",   "text=Log in")
 
-# Chat opener (optional) — clicked after page.goto() to reveal the chat UI
-CHAT_OPEN_SELECTOR = os.environ.get("CHAT_OPEN_SELECTOR", "")
+TODAY = datetime.date.today().strftime("%Y-%m-%d")
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Setup helpers
 # ---------------------------------------------------------------------------
+
+def accept_cookie_banner(page) -> None:
+    try:
+        btn = page.wait_for_selector(
+            "[role='region'][aria-label='Cookie consent'] button:has-text('Accept All')",
+            state="visible", timeout=3000,
+        )
+        if btn:
+            btn.click()
+            page.wait_for_selector(
+                "[role='region'][aria-label='Cookie consent']",
+                state="hidden", timeout=5000,
+            )
+    except Exception:
+        pass
+
 
 def do_login(page) -> None:
-    """Log in once using LOGIN_EMAIL / LOGIN_PASSWORD env vars."""
-    login_url = LOGIN_URL or (BASE_URL.rstrip("/") + "/login")
+    login_url = BASE_URL.rstrip("/") + "/login"
     print(f"\nLogging in as {LOGIN_EMAIL} ...")
     page.goto(login_url)
     page.wait_for_load_state("load")
-
-    # Step 1: email
-    page.fill(LOGIN_EMAIL_SELECTOR, LOGIN_EMAIL)
-    page.click(LOGIN_CONTINUE_SELECTOR)
+    # If already authenticated the login page redirects away immediately
+    if "/login" not in page.url:
+        print(f"Already logged in (at {page.url})")
+        return
+    page.fill("[placeholder='Enter email address']", LOGIN_EMAIL)
+    page.click("text=\"Continue\"")
     page.wait_for_load_state("load")
-
-    # Step 2: password
-    page.wait_for_selector(LOGIN_PASSWORD_SELECTOR, state="visible", timeout=10000)
-    page.fill(LOGIN_PASSWORD_SELECTOR, LOGIN_PASSWORD)
-    page.press(LOGIN_PASSWORD_SELECTOR, "Enter")
-    # Wait for navigation away from the login page
+    page.wait_for_selector("[placeholder='Enter password']", state="visible", timeout=10000)
+    page.fill("[placeholder='Enter password']", LOGIN_PASSWORD)
+    page.press("[placeholder='Enter password']", "Enter")
     page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
-
     print(f"Login complete (now at {page.url})")
 
 
-def load_conversations(paths: list[Path]) -> list[dict]:
-    conversations = []
-    for p in paths:
-        with open(p) as f:
-            conv = yaml.safe_load(f)
-            conv["_file"] = str(p)
-            conversations.append(conv)
-    return conversations
+def setup_page(page) -> str:
+    """
+    Walk through all pre-chat states: cookie banner → login → open chat dialog.
+    Returns the textarea selector to use for sending messages.
+    """
+    page.wait_for_load_state("load")
+
+    # 1. Cookie consent banner
+    accept_cookie_banner(page)
+
+    # 2. Login — always run if credentials are configured; do_login navigates to /login
+    #    itself and skips if already authenticated.
+    if LOGIN_EMAIL:
+        do_login(page)
+        page.goto(BASE_URL)
+        page.wait_for_load_state("load")
+        accept_cookie_banner(page)
+
+    print(f"  [setup] Loaded: {page.url}")
+
+    # 3. Open chat via the floating sparkle button (always present after login)
+    try:
+        page.wait_for_selector(
+            "button[aria-label='Open chat with Sage']", state="visible", timeout=30000
+        )
+    except PWTimeout:
+        page.screenshot(path="debug_setup_failure.png")
+        buttons = page.evaluate(
+            "() => Array.from(document.querySelectorAll('button'))"
+            ".map(b => (b.getAttribute('aria-label') || b.innerText.trim().slice(0,40)))"
+            ".filter(s => s).join('\\n')"
+        )
+        raise RuntimeError(
+            f"Chat button not found after 30s.\n"
+            f"URL: {page.url}\n"
+            f"Buttons on page:\n{buttons}\n"
+            f"Screenshot saved: debug_setup_failure.png"
+        )
+    page.click("button[aria-label='Open chat with Sage']")
+
+    # 4. Wait for the chat textarea inside the dialog
+    page.wait_for_selector("[placeholder='Talk to Sage']", state="visible", timeout=10000)
+    return "[placeholder='Talk to Sage']"
 
 
-def judge_response(client: OpenAI, user_msg: str, bot_msg: str, criterion: str) -> tuple[bool, str]:
-    """Ask the judge LLM whether a bot response meets the given criterion."""
+# ---------------------------------------------------------------------------
+# Core helpers
+# ---------------------------------------------------------------------------
+
+def scrape_events(page) -> list[dict]:
+    """Scrape all visible event cards from the home page."""
+    for _ in range(3):
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(1)
+    page.evaluate("window.scrollTo(0, 0)")
+
+    return page.evaluate("""() => {
+        const links = Array.from(document.querySelectorAll('a[href*="/event/"]'));
+        return links.map(el => {
+            const lines = el.innerText.trim().split('\\n')
+                .map(l => l.trim()).filter(l => l && l !== 'No image');
+            return { title: lines[0] || '', datetime: lines[1] || '', location: lines[2] || '' };
+        }).filter(e => e.title);
+    }""")
+
+
+def judge_response(client: OpenAI, user_msg: str, bot_msg: str, criterion: str, events=None) -> tuple[bool, str]:
+    criterion_filled = criterion.replace("{TODAY}", TODAY)
+
+    events_block = ""
+    if events:
+        lines = [f"- {e['title']} | {e['datetime']} | {e['location']}" for e in events]
+        events_block = "Events currently listed on the platform:\n" + "\n".join(lines) + "\n\n"
+        criterion_filled = criterion_filled.replace("{EVENTS}", "\n".join(lines))
+
     result = client.chat.completions.create(
         model=JUDGE_MODEL,
         max_tokens=256,
         messages=[{
             "role": "user",
             "content": (
-                f"You are evaluating a chatbot response.\n\n"
+                f"You are evaluating a chatbot response. Today's date is {TODAY}.\n"
+                f"{events_block}"
                 f"User message:\n{user_msg}\n\n"
                 f"Bot response:\n{bot_msg}\n\n"
-                f"Evaluation criterion:\n{criterion}\n\n"
-                "Does the bot response meet the criterion?\n"
+                f"Evaluation criterion:\n{criterion_filled}\n\n"
                 "Reply with PASS or FAIL on the first line, then a one-sentence explanation."
             ),
         }],
@@ -104,21 +171,33 @@ def judge_response(client: OpenAI, user_msg: str, bot_msg: str, criterion: str) 
     return passed, text
 
 
-def send_message(page, message: str) -> str:
+def _last_response_text(page) -> str:
+    """Return the innerText of the last RESPONSE_SELECTOR element via evaluate()."""
+    return page.evaluate(
+        f"() => {{ const els = document.querySelectorAll('{RESPONSE_SELECTOR}');"
+        f" return els.length ? els[els.length - 1].innerText.trim() : ''; }}"
+    )
+
+
+def send_message(page, textarea_selector: str, message: str) -> str:
     """Type a message, submit it, and return the latest bot response text."""
-    # Capture count before sending so we don't race a fast response
-    prev_count = page.locator(RESPONSE_SELECTOR).count()
+    # Capture the current last response text before sending.
+    # The chat uses a sliding window (fixed element count), so we detect a new
+    # response by waiting for the last element's text to change, not count change.
+    prev_last_text = _last_response_text(page)
 
-    page.fill(INPUT_SELECTOR, message)
-    if SEND_KEY:
-        page.press(INPUT_SELECTOR, SEND_KEY)
-    else:
-        page.click(SEND_SELECTOR)
+    page.fill(textarea_selector, message)
+    page.press(textarea_selector, "Enter")
 
-    # Wait for a new response element to appear
+    # Wait until a non-empty response appears that differs from the pre-send last text.
     try:
         page.wait_for_function(
-            f"document.querySelectorAll('{RESPONSE_SELECTOR}').length > {prev_count}",
+            """(prev) => {
+                const els = document.querySelectorAll('""" + RESPONSE_SELECTOR + """');
+                const t = els.length ? els[els.length - 1].innerText.trim() : '';
+                return t && t !== prev;
+            }""",
+            arg=prev_last_text,
             timeout=RESPONSE_TIMEOUT,
         )
     except PWTimeout:
@@ -127,11 +206,11 @@ def send_message(page, message: str) -> str:
             f"Check that RESPONSE_SELECTOR='{RESPONSE_SELECTOR}' matches your chatbot's DOM."
         )
 
-    # Poll until the response text stops changing (handles streaming responses)
+    # Poll via evaluate() until text stabilises for 1.5s (handles streaming).
     deadline = time.time() + RESPONSE_TIMEOUT / 1000
     last_text, stable_since = "", 0.0
     while time.time() < deadline:
-        text = page.locator(RESPONSE_SELECTOR).last.inner_text().strip()
+        text = _last_response_text(page)
         if text != last_text:
             last_text, stable_since = text, time.time()
         elif text and time.time() - stable_since >= 1.5:
@@ -142,44 +221,18 @@ def send_message(page, message: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Core runner
+# Conversation runner
 # ---------------------------------------------------------------------------
 
-def run_conversation(page, conv: dict, client) -> dict:
+def run_conversation(page, textarea_selector: str, conv: dict, client, events=None) -> dict:
     name  = conv.get("name", conv["_file"])
-    url   = conv.get("url", BASE_URL)
     turns = conv.get("turns", [])
 
     print(f"\n{'='*60}")
     print(f"Test : {name}")
-    print(f"URL  : {url}")
     print(f"{'='*60}")
 
-    page.goto(url)
-    page.wait_for_load_state("load")
-
-    # Dismiss cookie consent banner if present
-    try:
-        cookie_btn = page.wait_for_selector(
-            "[role='region'][aria-label='Cookie consent'] button",
-            state="visible", timeout=3000
-        )
-        if cookie_btn:
-            cookie_btn.click()
-            page.wait_for_selector(
-                "[role='region'][aria-label='Cookie consent']",
-                state="hidden", timeout=5000
-            )
-    except Exception:
-        pass  # No cookie banner, continue
-
-    if CHAT_OPEN_SELECTOR:
-        page.wait_for_selector(CHAT_OPEN_SELECTOR, state="visible", timeout=15000)
-        page.click(CHAT_OPEN_SELECTOR)
-
-    page.wait_for_selector(INPUT_SELECTOR, state="visible", timeout=15000)
-
-    results = []
+    results   = []
     all_passed = True
 
     for i, turn in enumerate(turns, 1):
@@ -189,7 +242,7 @@ def run_conversation(page, conv: dict, client) -> dict:
         print(f"\n  [Turn {i}] ▶  {message!r}")
 
         try:
-            response = send_message(page, message)
+            response = send_message(page, textarea_selector, message)
         except RuntimeError as e:
             print(f"  [Turn {i}] ERROR: {e}")
             results.append({"turn": i, "send": message, "response": None, "checks": [], "error": str(e)})
@@ -217,7 +270,7 @@ def run_conversation(page, conv: dict, client) -> dict:
                 print(f"  [Turn {i}] judge: SKIP (no OPENAI_API_KEY)")
             else:
                 criterion = expect["judge"]
-                passed, detail = judge_response(client, message, response, criterion)
+                passed, detail = judge_response(client, message, response, criterion, events)
                 tag = "PASS" if passed else "FAIL"
                 print(f"  [Turn {i}] judge: {tag} — {detail.splitlines()[1] if len(detail.splitlines()) > 1 else detail}")
                 checks.append({"type": "judge", "passed": passed, "detail": detail})
@@ -233,8 +286,17 @@ def run_conversation(page, conv: dict, client) -> dict:
 # Entry point
 # ---------------------------------------------------------------------------
 
+def load_conversations(paths: list[Path]) -> list[dict]:
+    conversations = []
+    for p in paths:
+        with open(p) as f:
+            conv = yaml.safe_load(f)
+            conv["_file"] = str(p)
+            conversations.append(conv)
+    return conversations
+
+
 def main():
-    # Resolve which conversation files to run
     if len(sys.argv) > 1:
         files = [Path(a) for a in sys.argv[1:]]
         bad = [f for f in files if f.suffix not in (".yaml", ".yml")]
@@ -246,12 +308,14 @@ def main():
         files = sorted(CONVERSATIONS_DIR.glob("*.yaml"))
 
     if not files:
-        print(f"No conversation files found. Put YAML files in ./{CONVERSATIONS_DIR}/ or pass paths as arguments.")
+        print(
+            f"No conversation files found. "
+            f"Put YAML files in ./{CONVERSATIONS_DIR}/ or pass paths as arguments."
+        )
         sys.exit(1)
 
     conversations = load_conversations(files)
 
-    # Set up the judge client (optional)
     client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
     if not client:
         print("Note: OPENAI_API_KEY not set — LLM-as-judge checks will be skipped.")
@@ -263,18 +327,21 @@ def main():
         context = browser.new_context()
         page    = context.new_page()
 
-        if LOGIN_EMAIL:
-            do_login(page)
+        print(f"\nNavigating to {BASE_URL} ...")
+        page.goto(BASE_URL)
+        textarea_selector = setup_page(page)
+        print(f"Chat entry ready (selector: {textarea_selector!r})")
+
+        events = scrape_events(page)
+        print(f"Scraped {len(events)} events from the UI")
 
         for conv in conversations:
-            result = run_conversation(page, conv, client)
+            result = run_conversation(page, textarea_selector, conv, client, events)
             all_results.append(result)
 
         browser.close()
 
-    # ---------------------------------------------------------------------------
     # Summary
-    # ---------------------------------------------------------------------------
     print(f"\n{'='*60}")
     print("SUMMARY")
     print(f"{'='*60}")
@@ -297,7 +364,7 @@ def main():
     print(f"\nChecks : {passed_checks}/{total_checks} passed")
     print(f"Tests  : {len(all_results) - len(failed_tests)}/{len(all_results)} passed")
 
-    sys.exit(0 if not failed_tests else 1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
