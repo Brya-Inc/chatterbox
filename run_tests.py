@@ -96,28 +96,53 @@ def setup_page(page) -> str:
 
     print(f"  [setup] Loaded: {page.url}")
 
-    # 3. Open chat via the floating sparkle button (always present after login)
-    try:
-        page.wait_for_selector(
-            "button[aria-label='Open chat with Sage']", state="visible", timeout=30000
-        )
-    except PWTimeout:
-        page.screenshot(path="debug_setup_failure.png")
-        buttons = page.evaluate(
-            "() => Array.from(document.querySelectorAll('button'))"
-            ".map(b => (b.getAttribute('aria-label') || b.innerText.trim().slice(0,40)))"
-            ".filter(s => s).join('\\n')"
-        )
-        raise RuntimeError(
-            f"Chat button not found after 30s.\n"
-            f"URL: {page.url}\n"
-            f"Buttons on page:\n{buttons}\n"
-            f"Screenshot saved: debug_setup_failure.png"
-        )
-    page.click("button[aria-label='Open chat with Sage']")
+    # 3. Open chat dialog — try several entry points in order of preference
+    # a) Already open (textarea visible from a prior interaction)
+    # b) Floating sparkle button (old UI)
+    # c) "Continue chat with Sage" button (shown after prior inline submission)
+    # d) Inline suggestion button (new UI — clicking one opens the full dialog)
+    textarea_visible = page.is_visible("[placeholder='Talk to Sage']")
+    if not textarea_visible:
+        opened = False
+        for selector, label in [
+            ("button[aria-label='Open chat with Sage']", "floating chat button"),
+            ("button:has-text('Continue chat with Sage')",  "continue-chat button"),
+        ]:
+            try:
+                page.wait_for_selector(selector, state="visible", timeout=5000)
+                page.click(selector)
+                opened = True
+                print(f"  [setup] Opened chat via {label}")
+                break
+            except PWTimeout:
+                pass
+
+        if not opened:
+            # Fall back to an inline suggestion button (new UI)
+            for suggestion in ["Something social", "Something active", "Surprise me"]:
+                sel = f"button:has-text('{suggestion}')"
+                if page.is_visible(sel):
+                    page.click(sel)
+                    print(f"  [setup] Opened chat via suggestion button '{suggestion}'")
+                    opened = True
+                    break
+
+        if not opened:
+            page.screenshot(path="debug_setup_failure.png")
+            buttons = page.evaluate(
+                "() => Array.from(document.querySelectorAll('button'))"
+                ".map(b => (b.getAttribute('aria-label') || b.innerText.trim().slice(0,40)))"
+                ".filter(s => s).join('\\n')"
+            )
+            raise RuntimeError(
+                f"Could not open chat dialog — no known entry point found.\n"
+                f"URL: {page.url}\n"
+                f"Buttons on page:\n{buttons}\n"
+                f"Screenshot saved: debug_setup_failure.png"
+            )
 
     # 4. Wait for the chat textarea inside the dialog
-    page.wait_for_selector("[placeholder='Talk to Sage']", state="visible", timeout=10000)
+    page.wait_for_selector("[placeholder='Talk to Sage']", state="visible", timeout=15000)
     return "[placeholder='Talk to Sage']"
 
 
