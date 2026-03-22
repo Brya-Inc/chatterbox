@@ -30,7 +30,7 @@ All configuration is via environment variables (see `.env.example`). The critica
 | `SEND_SELECTOR` | CSS selector for the send button | `button[type='submit']` |
 | `RESPONSE_SELECTOR` | CSS selector matching each bot message | `.bot-message` |
 | `RESPONSE_TIMEOUT_MS` | How long to wait for a bot reply | `15000` |
-| `ANTHROPIC_API_KEY` | Enables LLM-as-judge; omit to skip judging | — |
+| `OPENAI_API_KEY` | Enables LLM-as-judge; omit to skip judging | — |
 | `HEADLESS` | Set to `0` to show the browser | `1` |
 
 ## Docker
@@ -63,16 +63,27 @@ turns:
 
 Both `contains` and `judge` are optional and can be combined. A turn with no `expect` key just sends the message without asserting anything.
 
+### Placeholders in judge criteria
+
+Judge criterion strings support these runtime placeholders:
+
+| Placeholder | Replaced with |
+|---|---|
+| `{TODAY}` | Today's date in `YYYY-MM-DD` format |
+| `{EVENTS}` | Newline-separated list of events scraped from the UI (`title \| datetime \| location`) |
+
 ## Architecture
 
 Everything lives in `run_tests.py`. The execution flow is:
 
-1. `main()` — resolves which YAML files to run, initializes the Anthropic client and Playwright browser
-2. `run_conversation()` — navigates to the URL and iterates through turns; accumulates pass/fail state
-3. `send_message()` — fills the input, clicks send, then waits for the bot-message count in the DOM to increase before returning the new response text
-4. `judge_response()` — calls `claude-sonnet-4-6` with the user message, bot response, and criterion; parses PASS/FAIL from the first line of the reply
+1. `main()` — resolves which YAML files to run, initializes the OpenAI client and Playwright browser
+2. `setup_page()` — handles cookie banner, login, and opens the chat dialog; returns the textarea selector
+3. `scrape_events()` — scrolls the home page to trigger lazy-load, then extracts all event cards as `{title, datetime, location}` dicts
+4. `run_conversation()` — iterates through turns; accumulates pass/fail state
+5. `send_message()` — fills the input, presses Enter, then polls until the last bot message stabilises for 1.5s
+6. `judge_response()` — calls the judge model with the user message, bot response, scraped events, and criterion; parses PASS/FAIL from the first line of the reply
 
-A single browser page is reused across all conversation files. Each conversation navigates to its URL fresh (via `page.goto`), but browser state (cookies, localStorage) persists between conversations unless the context is reset.
+A single browser page is reused across all conversation files. Browser state (cookies, localStorage) persists between conversations.
 
 ## Adding new check types
 
