@@ -101,6 +101,18 @@ def setup_page(page) -> str:
     # b) Floating sparkle button (old UI)
     # c) "Continue chat with Sage" button (shown after prior inline submission)
     # d) Inline suggestion button (new UI — clicking one opens the full dialog)
+
+    # Pre-step: dismiss inline post-event check-in widget (Yes/No) if present —
+    # it blocks access to the main chat entry points until dismissed.
+    if not page.is_visible("[placeholder='Talk to Sage']"):
+        try:
+            page.wait_for_selector("button:has-text('No')", state="visible", timeout=3000)
+            page.click("button:has-text('No')")
+            print("  [setup] Dismissed inline event check-in (clicked No)")
+            time.sleep(1)
+        except PWTimeout:
+            pass
+
     textarea_visible = page.is_visible("[placeholder='Talk to Sage']")
     if not textarea_visible:
         opened = False
@@ -143,6 +155,18 @@ def setup_page(page) -> str:
 
     # 4. Wait for the chat textarea inside the dialog
     page.wait_for_selector("[placeholder='Talk to Sage']", state="visible", timeout=15000)
+
+    # 5. Wait for any in-progress bot response to finish streaming before we return.
+    #    Clicking the check-in "No" triggers a Sage reply; if it's still streaming when
+    #    the caller sends the first test message, prev_count will be unstable.
+    try:
+        page.wait_for_function(
+            "() => !document.querySelector('.animate-bounce')",
+            timeout=15000,
+        )
+    except PWTimeout:
+        pass  # typing indicator didn't appear or didn't clear — proceed anyway
+
     return "[placeholder='Talk to Sage']"
 
 
@@ -206,23 +230,29 @@ def _last_response_text(page) -> str:
 
 def send_message(page, textarea_selector: str, message: str) -> str:
     """Type a message, submit it, and return the latest bot response text."""
-    # Capture the current last response text before sending.
-    # The chat uses a sliding window (fixed element count), so we detect a new
-    # response by waiting for the last element's text to change, not count change.
+    # Capture count and last text before sending so we can detect a genuinely new reply.
+    # Using count increase (new element added) as primary signal avoids false negatives
+    # when Sage repeats a prior response verbatim (t !== prev would never fire in that case).
+    prev_count = page.evaluate(
+        f"() => document.querySelectorAll('{RESPONSE_SELECTOR}').length"
+    )
     prev_last_text = _last_response_text(page)
 
     page.fill(textarea_selector, message)
     page.press(textarea_selector, "Enter")
 
-    # Wait until a non-empty response appears that differs from the pre-send last text.
+    # Wait until a new bot message element has been added AND contains non-empty text
+    # (the typing-indicator element shares the selector but has empty innerText).
+    # Fall back to text-change detection for UIs with a fixed-size message window.
     try:
         page.wait_for_function(
-            """(prev) => {
+            """([prevCount, prevLast]) => {
                 const els = document.querySelectorAll('""" + RESPONSE_SELECTOR + """');
-                const t = els.length ? els[els.length - 1].innerText.trim() : '';
-                return t && t !== prev;
+                const count = els.length;
+                const t = count ? els[count - 1].innerText.trim() : '';
+                return (count > prevCount && t) || (t && t !== prevLast);
             }""",
-            arg=prev_last_text,
+            arg=[prev_count, prev_last_text],
             timeout=RESPONSE_TIMEOUT,
         )
     except PWTimeout:

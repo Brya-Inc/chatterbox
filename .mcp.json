@@ -2,12 +2,11 @@
   "mcpServers": {
     "playwright": {
       "type": "stdio",
-      "command": "npx",
+      "command": "/opt/homebrew/bin/node",
       "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ],
-      "env": {}
+        "/opt/homebrew/lib/node_modules/@playwright/mcp/cli.js",
+        "--browser", "chromium"
+      ]
     }
   }
 }
