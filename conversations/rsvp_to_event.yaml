@@ -1,0 +1,27 @@
+name: "RSVP to a this-week event"
+url: "https://www.dev.brya.com"
+
+turns:
+  - send: "What events are taking place this week?"
+    expect:
+      judge: |
+        The response should indicate that events are available this week — either
+        by listing them in text, or by saying something like "here are events
+        happening this week" (the events may be displayed as UI cards rather than
+        inline text). A response that acknowledges events exist and presents them
+        (even via cards) should PASS. Only FAIL if the bot says it has no
+        information or refuses to answer. Today's date is {TODAY}.
+
+  - send: "Please RSVP me to the first event you mentioned."
+    expect:
+      judge: |
+        The response should ask the user to confirm their RSVP to a specific named
+        event before completing the action. It should clearly name the event and
+        seek a yes/no confirmation — not silently complete the RSVP.
+
+  - send: "yes"
+    expect:
+      judge: |
+        The response should confirm that the RSVP has been completed successfully.
+        It should clearly state that the user is now registered or signed up for
+        the event, and ideally name the event in the confirmation message.
