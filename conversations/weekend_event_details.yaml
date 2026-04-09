@@ -1,0 +1,30 @@
+name: "Weekend events list and detail cross-reference"
+url: "https://www.dev.brya.com"
+
+turns:
+  - send: "What events are available this weekend?"
+    expect:
+      judge: |
+        The response should list specific events happening this weekend
+        (Saturday and Sunday of the current week). Today's date is {TODAY}.
+
+        For reference, here are the events actually on the platform:
+        {EVENTS}
+
+        The response should list at least one event. Any events cited should
+        appear in the list above. If no weekend events exist, the response
+        should honestly say so rather than fabricating events.
+
+  - send: "Can you tell me more about the first event you mentioned? I'd like to know the location, venue, time, and any other details."
+    expect:
+      judge: |
+        The response should provide specific details about one of the events
+        listed in the previous turn — including at minimum the time and
+        location or venue. Today's date is {TODAY}.
+
+        Cross-reference the details given against the actual event data below:
+        {EVENTS}
+
+        The details (date, time, location/venue) must match what is in the
+        event list above. The response should not contradict or fabricate
+        information that differs from the actual event data.
