@@ -167,14 +167,44 @@ def scrape_events(page) -> list[dict]:
     }""")
 
 
-def judge_response(client: OpenAI, user_msg: str, bot_msg: str, criterion: str, events=None) -> tuple[bool, str]:
+def scrape_rsvp_events(page) -> list[dict]:
+    """Scrape events the user has already RSVP'd to (shown under 'You're attending' or similar)."""
+    return page.evaluate("""() => {
+        // Find a heading/label containing attending-related text
+        const headings = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,span,div'))
+            .filter(el => /you'?re attending|my rsvps|going to/i.test(el.innerText.trim())
+                       && el.innerText.trim().length < 80);
+
+        for (const heading of headings) {
+            const container = heading.closest('section') || heading.parentElement;
+            if (!container) continue;
+            const links = Array.from(container.querySelectorAll('a[href*="/event/"]'));
+            if (links.length) {
+                return links.map(el => {
+                    const lines = el.innerText.trim().split('\\n')
+                        .map(l => l.trim()).filter(l => l && l !== 'No image');
+                    return { title: lines[0] || '', datetime: lines[1] || '', location: lines[2] || '' };
+                }).filter(e => e.title);
+            }
+        }
+        return [];
+    }""")
+
+
+def judge_response(client: OpenAI, user_msg: str, bot_msg: str, criterion: str, events=None, rsvp_events=None) -> tuple[bool, str]:
     criterion_filled = criterion.replace("{TODAY}", TODAY)
 
     events_block = ""
-    if events:
+    if events and "{EVENTS}" in criterion_filled:
         lines = [f"- {e['title']} | {e['datetime']} | {e['location']}" for e in events]
         events_block = "Events currently listed on the platform:\n" + "\n".join(lines) + "\n\n"
         criterion_filled = criterion_filled.replace("{EVENTS}", "\n".join(lines))
+
+    if rsvp_events is not None and "{MY_EVENTS}" in criterion_filled:
+        lines = [f"- {e['title']} | {e['datetime']} | {e['location']}" for e in rsvp_events]
+        rsvp_block = "\n".join(lines) if lines else "(none)"
+        events_block += "Events the user has RSVP'd to:\n" + rsvp_block + "\n\n"
+        criterion_filled = criterion_filled.replace("{MY_EVENTS}", rsvp_block)
 
     result = client.chat.completions.create(
         model=JUDGE_MODEL,
@@ -249,7 +279,7 @@ def send_message(page, textarea_selector: str, message: str) -> str:
 # Conversation runner
 # ---------------------------------------------------------------------------
 
-def run_conversation(page, textarea_selector: str, conv: dict, client, events=None) -> dict:
+def run_conversation(page, textarea_selector: str, conv: dict, client, events=None, rsvp_events=None) -> dict:
     name  = conv.get("name", conv["_file"])
     turns = conv.get("turns", [])
 
@@ -295,7 +325,7 @@ def run_conversation(page, textarea_selector: str, conv: dict, client, events=No
                 print(f"  [Turn {i}] judge: SKIP (no OPENAI_API_KEY)")
             else:
                 criterion = expect["judge"]
-                passed, detail = judge_response(client, message, response, criterion, events)
+                passed, detail = judge_response(client, message, response, criterion, events, rsvp_events)
                 tag = "PASS" if passed else "FAIL"
                 print(f"  [Turn {i}] judge: {tag} — {detail.splitlines()[1] if len(detail.splitlines()) > 1 else detail}")
                 checks.append({"type": "judge", "passed": passed, "detail": detail})
@@ -360,8 +390,11 @@ def main():
         events = scrape_events(page)
         print(f"Scraped {len(events)} events from the UI")
 
+        rsvp_events = scrape_rsvp_events(page)
+        print(f"Scraped {len(rsvp_events)} RSVP'd events from the UI")
+
         for conv in conversations:
-            result = run_conversation(page, textarea_selector, conv, client, events)
+            result = run_conversation(page, textarea_selector, conv, client, events, rsvp_events)
             all_results.append(result)
 
         browser.close()

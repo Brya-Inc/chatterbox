@@ -15,13 +15,30 @@ turns:
   - send: "Please RSVP me to the first event you mentioned."
     expect:
       judge: |
-        The response should ask the user to confirm their RSVP to a specific named
-        event before completing the action. It should clearly name the event and
-        seek a yes/no confirmation — not silently complete the RSVP.
+        Two acceptable outcomes:
+
+        1. The bot asks the user to confirm their RSVP to a specific named event
+           before completing the action — it should name the event and seek a
+           yes/no confirmation.
+
+        2. The bot informs the user they are already RSVP'd / already attending
+           the event — this is also acceptable and should PASS.
 
   - send: "yes"
     expect:
       judge: |
-        The response should confirm that the RSVP has been completed successfully.
-        It should clearly state that the user is now registered or signed up for
-        the event, and ideally name the event in the confirmation message.
+        Two acceptable outcomes:
+
+        1. The RSVP was completed successfully — the response clearly states the
+           user is now registered or signed up for the event, and ideally names it.
+
+        2. The bot says the user is already attending / already registered for the
+           event — in this case, verify that the named event appears in the
+           following list of events the user has already RSVP'd to:
+           {MY_EVENTS}
+           If the bot claims the user is already attending but the event does NOT
+           appear in that list, FAIL. If the event does appear, PASS.
+
+        FAIL only if the response is ambiguous, says the RSVP failed for an
+        unexpected reason, or claims already-attending without the event being
+        in the MY_EVENTS list above.
