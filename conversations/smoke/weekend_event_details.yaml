@@ -1,0 +1,33 @@
+name: "Weekend events list and detail cross-reference"
+description: "Sage lists weekend events, then provides details about the first one it named."
+tags: [smoke]
+
+setup:
+  fresh_chat: true
+  require_events: true
+
+turns:
+  - send: "What events are available this weekend?"
+    expect:
+      - judge: |
+          The response should list events happening this weekend (Saturday and/or
+          Sunday of the current week). Today's date is {TODAY}.
+
+          For reference, here are the events actually on the platform:
+          {EVENTS}
+
+          PASS if the bot lists at least one event whose date falls on this
+          weekend AND that event appears in the list above. PASS if the bot
+          honestly says there are no weekend events and none appear in the list
+          above. FAIL if the bot fabricates an event not in the list, or claims
+          there are no events when weekend events do exist in the list.
+
+  - send: "Can you tell me more about the first event you mentioned? I'd like to know the location, venue, time, and any other details."
+    expect:
+      - not_contains: "I don't have"
+      - judge: |
+          The response should provide details about the same event the bot named
+          in its previous reply. It should include at minimum the date/time and
+          location or venue. PASS if the bot gives specific details (time,
+          location, or description) for that event. FAIL only if the bot
+          describes a completely different event or provides no details at all.

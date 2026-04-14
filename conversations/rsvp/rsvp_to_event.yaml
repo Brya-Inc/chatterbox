@@ -1,0 +1,56 @@
+name: "RSVP to a this-week event"
+description: "User asks for this week's events, requests an RSVP, confirms."
+tags: [rsvp]
+
+setup:
+  fresh_chat: true
+  require_events: true
+
+turns:
+  - send: "What events are taking place this week?"
+    expect:
+      - judge: |
+          The response should indicate that events are available this week —
+          either by listing them in text, or by saying something like "here are
+          events happening this week" (events may display as UI cards rather
+          than inline text). A response that acknowledges events exist and
+          presents them (even via cards) should PASS. Only FAIL if the bot says
+          it has no information or refuses to answer. Today's date is {TODAY}.
+
+  - send: "Please RSVP me to the first event you mentioned."
+    expect:
+      - not_contains: "error"
+      - judge: |
+          Two acceptable outcomes:
+
+          1. The bot asks the user to confirm their RSVP to a specific named
+             event before completing the action — it should name the event and
+             seek a yes/no confirmation.
+
+          2. The bot informs the user they are already RSVP'd / already
+             attending the event — this is also acceptable and should PASS.
+
+  - send: "yes"
+    expect:
+      - judge: |
+          Two acceptable outcomes:
+
+          1. The RSVP was completed successfully — the response clearly states
+             the user is now registered or signed up for the event, and ideally
+             names it.
+
+          2. The bot says the user is already attending / already registered,
+             and the named event appears in {MY_EVENTS}. If the bot claims
+             already-attending but the event does NOT appear in that list, FAIL.
+
+          FAIL if the response is ambiguous, says the RSVP failed for an
+          unexpected reason, or claims already-attending without the event
+          being in {MY_EVENTS}.
+
+final:
+  judge: |
+    Across the full conversation, the user successfully ended up RSVP'd to a
+    real event that appears in {EVENTS}. PASS if either (a) the bot confirmed
+    a new RSVP to a specific event from {EVENTS}, or (b) the bot reported the
+    user was already attending an event that appears in {MY_EVENTS}. FAIL
+    otherwise.

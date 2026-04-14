@@ -1,0 +1,11 @@
+name: "Deliberate failure probe"
+description: "Verifies the reporter surfaces failures and the process exits non-zero."
+tags: [probe]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Hello Sage"
+    expect:
+      - contains: "xyzzy-this-will-never-match"

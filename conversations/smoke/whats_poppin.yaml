@@ -1,0 +1,22 @@
+name: "Slang weekend events query"
+description: "Sage should understand casual slang as a weekend-events question."
+tags: [smoke]
+
+setup:
+  require_events: true
+
+turns:
+  - send: "What's poppin this weekend?"
+    expect:
+      - judge: |
+          The response should demonstrate that Sage understood the slang
+          "What's poppin" as a casual way of asking what events are happening.
+          It should list or describe specific events occurring this weekend
+          (Saturday and Sunday of the current week). Today's date is {TODAY}.
+
+          For reference, here are the events listed on the platform:
+          {EVENTS}
+
+          If the response cites specific events, verify they appear in the list
+          above. If no weekend events exist in the list, the response should
+          honestly say so. FAIL if the bot fabricates an event not in the list.

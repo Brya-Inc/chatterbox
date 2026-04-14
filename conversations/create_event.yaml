@@ -1,7 +1,0 @@
-name: "Create Event - Chatbot Prompts for Details"
-url: "https://www.dev.brya.com"
-
-turns:
-  - send: "I want to create an event"
-    expect:
-      judge: "The response should acknowledge the request to create an event and ask for details such as the event name, date/time, location, and/or description"

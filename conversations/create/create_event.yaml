@@ -1,0 +1,16 @@
+name: "Create Event - Chatbot prompts for details"
+description: "When the user asks to create an event, Sage should collect the needed fields."
+tags: [create]
+
+setup:
+  fresh_chat: true
+
+turns:
+  - send: "I want to create an event"
+    expect:
+      - judge: |
+          The response should acknowledge the request to create an event and
+          ask for details such as the event name, date/time, location, and/or
+          description. PASS if the bot is actively guiding the user through
+          event creation. FAIL if the bot refuses, ignores the request, or
+          says it cannot create events.
