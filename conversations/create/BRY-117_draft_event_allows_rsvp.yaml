@@ -1,0 +1,26 @@
+name: "BRY-117: Draft event allows RSVP but becomes inaccessible and disappears"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  A draft (unpublished) event accepts RSVPs via chat and shows up in the user's attending list, but the event detail page 404s and admin shows it as both draft and published.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Create an event called 'Rooftop Mixer' on May 25th at 7pm at the downtown lounge with capacity 20."
+    expect:
+      - judge: "Bot should create the event (it will be in draft/pending admin approval). FAIL if the bot errors or refuses to create."
+
+  - send: "Great — please RSVP me as attending to 'Rooftop Mixer'."
+    expect:
+      - judge: "Bot should either (a) explain that the event cannot be RSVP'd to until it is published/approved, or (b) queue the RSVP for after approval. FAIL if the bot confirms an immediate successful RSVP to the still-draft event — BRY-117 is the bug where drafts accept RSVPs that later break the user's attending list."
+
+  - send: "Is 'Rooftop Mixer' already live and visible to other users, or is it still pending approval?"
+    expect:
+      - judge: "Bot should clearly state the event is still pending admin review/approval and not yet live. FAIL if the bot says the event is already published when it was just created moments ago."
+
+  - send: "Show me my attending list. Should 'Rooftop Mixer' appear there right now?"
+    expect:
+      - judge: "Bot should indicate the user is not currently RSVP'd to 'Rooftop Mixer' (since it is still a draft and drafts should not accept RSVPs), or explain that the RSVP is pending publication. FAIL if the bot confirms 'Rooftop Mixer' is in the attending list for a still-unpublished draft event."

@@ -1,0 +1,26 @@
+name: "BRY-358: [Product Feedback] Event creation flow unclear and overly verbose"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  The event creation flow requires 12+ back-and-forths, does not state mandatory vs optional fields upfront, keeps prompting for venue without explaining it is required, and makes optional fields feel mandatory.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event."
+    expect:
+      - judge: "Bot should state which fields are required and which are optional at the outset, ideally in one clear summary. FAIL if the bot asks for one field at a time without indicating which fields are mandatory vs optional — this contributes to the verbose back-and-forth described in the bug."
+
+  - send: "Can you tell me all the required fields at once so I can provide them in one go?"
+    expect:
+      - judge: "Bot should list all required fields clearly in a single response. FAIL if the bot continues asking for one field at a time or cannot summarize the required fields."
+
+  - send: "Event name: 'Senior Tech Talk', date: May 22nd, time: 3pm, capacity: 30, description: A casual Q&A about smartphones and apps."
+    expect:
+      - judge: "Bot should accept all provided fields in one pass and ask only for any genuinely required missing information (e.g., venue if truly required). FAIL if the bot asks for fields that were already provided, or prompts for optional fields as if they are mandatory."
+
+  - send: "I don't have a venue right now, can I skip that?"
+    expect:
+      - judge: "Bot should clearly state whether venue is required or optional. If venue is required, bot should explain this immediately and offer options (e.g., create a venue, skip for now). FAIL if the bot keeps prompting for a venue repeatedly without ever clarifying whether it is required or explaining what 'not yet' means for the flow."

@@ -1,0 +1,26 @@
+name: "BRY-88: Chat messages displaying out of chronological order"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  When skipping venue and description prompts during event creation, the chat history reorders so the event summary is sent but earlier messages appear above it out of order.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Sunset Yoga' on May 20th at 6pm."
+    expect:
+      - judge: "Bot should begin the event creation flow, acknowledge the name/date/time, and move on to the next prompt (likely venue). FAIL if the bot errors or refuses."
+
+  - send: "skip for now"
+    expect:
+      - judge: "Bot should accept skipping the venue and proceed to the next prompt (likely description). FAIL if the bot errors or re-asks for venue."
+
+  - send: "no, skip description"
+    expect:
+      - judge: "Bot should accept skipping the description and proceed toward a summary/confirmation of the event. FAIL if the bot errors or loops back to description."
+
+  - send: "Is the chat history in the correct chronological order? Please list back the previous messages in the order you received them."
+    expect:
+      - judge: "Bot should confirm the messages were received in order: first the create request for 'Sunset Yoga', then the venue skip, then the description skip. FAIL if the bot reorders messages or indicates a mismatch — the bug (BRY-88) is the chat UI displaying earlier messages out of order above the summary."

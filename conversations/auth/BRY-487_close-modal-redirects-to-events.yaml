@@ -1,0 +1,20 @@
+name: "BRY-487: Closing login modal redirects to Events page while logged out instead of returning to login"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  Clicking X to close the login modal intermittently redirects the user to the Events page while still logged out,
+  instead of returning to the main Login/Signup page.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to /login while not logged in and wait for the login modal to appear"
+    expect:
+      - judge: "The login modal or login page should be visible. FAIL if the page does not show a login prompt."
+
+  - send: "Click the X (close) button on the login modal"
+    expect:
+      - judge: "Closing the modal should return the user to the main Login/Signup page, keeping them in an unauthenticated but recoverable state. FAIL if the user is redirected to the Events page while still logged out, leaving them on a page they cannot meaningfully interact with without authentication."

@@ -1,0 +1,22 @@
+name: "BRY-119: Chat can't find published event"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  After an event created through chat is published via admin, the chatbot cannot locate the event for RSVP even though it is visible on the platform.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events are on my calendar right now? List the ones I can RSVP to."
+    expect:
+      - judge: "Bot should list the currently available published events on the platform, either via prose or event cards. Today is {TODAY}. Available events from the home page: {EVENTS}. FAIL if the bot says it has no events, errors, or contradicts the list above — BRY-119 is the bug where chat cannot find published events."
+
+  - send: "Please RSVP me to the first event you just listed."
+    expect:
+      - judge: "Bot should successfully RSVP the user to the event it just listed. FAIL if the bot now claims it cannot find the event it literally just surfaced — that inability to locate a published event is BRY-119."
+
+  - send: "Can you confirm which events I'm now attending?"
+    expect:
+      - judge: "Bot should list the event the user just RSVP'd to. Current RSVP'd events: {MY_EVENTS}. FAIL if the bot says it cannot find the event or claims no RSVPs exist when the user just successfully RSVP'd moments ago."

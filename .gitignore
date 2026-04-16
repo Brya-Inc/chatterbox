@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .playwright-mcp/
 debug_*.py
+debug_*.png
+.auth/
+out/

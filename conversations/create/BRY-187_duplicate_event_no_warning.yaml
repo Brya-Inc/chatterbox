@@ -1,0 +1,26 @@
+name: "BRY-187: Chat allows duplicate event creation without warning or confirmation"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user creates two events with identical details, the chat accepts the second one without any duplicate warning or confirmation prompt.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Morning Meditation' on April 25th at 8am at the Community Center with a capacity of 20."
+    expect:
+      - judge: "Bot should begin or complete the event creation flow for 'Morning Meditation'. FAIL if the bot refuses or errors out."
+
+  - send: "Yes, please go ahead and create it."
+    expect:
+      - judge: "Bot should confirm the event 'Morning Meditation' has been created. FAIL if the bot cannot create the event."
+
+  - send: "Now I want to create another event called 'Morning Meditation' on April 25th at 8am at the Community Center with a capacity of 20."
+    expect:
+      - judge: "Bot should warn the user that an identical event already exists and ask for explicit confirmation before creating a duplicate. FAIL if the bot accepts the second event without any duplicate warning — this is the bug."
+
+  - send: "Just create it anyway."
+    expect:
+      - judge: "Bot should either require explicit acknowledgment that this is an intentional duplicate, or explain why it will not create it. FAIL if the bot creates the duplicate silently without any acknowledgment of the duplication."

@@ -1,0 +1,17 @@
+name: "BRY-153: 'Show events this week' returns correct response for one user and past events for another"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  "Show events this week" must only return upcoming events, never past events.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Show me all events happening this week."
+    expect:
+      - judge: "Expected: Response lists only upcoming events for the remainder of this week (today or later, relative to {TODAY}) or clearly states there are none. FAIL if the response includes events whose date/time has already passed before {TODAY}."
+  - send: "Just to confirm — are any of those events already over?"
+    expect:
+      - judge: "Expected: Sage confirms that all listed events are upcoming/future and none have already occurred. FAIL if Sage acknowledges including past events or lists any past dates relative to {TODAY}."

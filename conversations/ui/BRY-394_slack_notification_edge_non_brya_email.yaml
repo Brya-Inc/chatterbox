@@ -1,0 +1,27 @@
+name: "BRY-394: Slack notification for event submission fails on Edge browser with non-Brya email account"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Event submissions via Microsoft Edge with a non-Brya email account do not trigger Slack notifications, though the event still appears in the admin portal.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Using Microsoft Edge browser, log in with a non-Brya email account and navigate to the event submission form"
+    expect:
+      - judge: "The event submission form should be accessible and display all required fields. State: FAIL if the form is not accessible or fields are missing."
+
+  - send: "Fill in all required fields for a new event and submit the form using the Edge browser with a non-Brya account"
+    expect:
+      - judge: "The event submission should complete successfully with a confirmation message shown to the user. State: FAIL if the submission fails or no confirmation is shown."
+
+  - send: "Check the admin portal to confirm the submitted event appears there"
+    expect:
+      - judge: "The newly submitted event should appear in the admin portal. State: FAIL if the event is not visible in the admin portal after submission."
+
+  - send: "Verify that a Slack notification was triggered for this Edge browser non-Brya email submission"
+    expect:
+      - judge: "A Slack notification should have been sent for this event submission, consistent with submissions from Chrome or Brya email accounts. State: FAIL if no Slack notification was sent despite the event appearing in the admin portal — this failure is specific to Edge browser combined with non-Brya email accounts."

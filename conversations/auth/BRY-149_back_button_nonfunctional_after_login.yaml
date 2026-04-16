@@ -1,0 +1,21 @@
+name: "BRY-149: Browser back button non-functional after logging in to previous user's event page (Bug #2)"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Browser back button became completely non-functional after login landed on previous user's event page; only an RSVP-triggered refresh unblocked navigation.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log out from an event detail page as User A (do not return to homepage first)."
+    expect:
+      - judge: "User A is logged out while still on the event page URL. FAIL if logout did not complete."
+  - send: "Log in as User B on the same page."
+    expect:
+      - judge: "User B is authenticated. Note that Bug #1 (BRY-147) may cause User B to land on User A's event page."
+  - send: "Press the browser back button."
+    expect:
+      - judge: "The browser back button should work and navigate the user to a previous page (or at minimum leave the home icon usable). FAIL if the back button is completely non-functional and the user must RSVP to the event to trigger a refresh before the home icon becomes usable."

@@ -1,0 +1,20 @@
+name: "BRY-359: Chat becomes unresponsive after tab inactive — messages stuck loading even after reload"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Chat must work consistently regardless of tab inactivity; messages must not get stuck loading.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Hey Sage, are you there?"
+    expect:
+      - judge: "Expected: Sage responds normally to a simple greeting. FAIL if the response is empty or stuck on a loading indicator."
+  - send: "Show me events this weekend."
+    expect:
+      - judge: "Expected: Sage responds with weekend events (or clearly states there are none) without getting stuck. FAIL if the response never arrives or is only a persistent loading indicator."
+  - send: "One more — tell me about any free events."
+    expect:
+      - judge: "Expected: Sage responds about free events promptly. FAIL if the chat has become unresponsive or the message is stuck loading with no answer."

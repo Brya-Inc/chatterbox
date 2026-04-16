@@ -1,0 +1,26 @@
+name: "BRY-152: Chatbot freezes mid-response during event creation, requires user input to trigger incorrect error message"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  During venue selection the chatbot starts typing 'look it up for me' then freezes with loading dots. Only when the user sends another message does the bot delete the partial message and incorrectly blame the user's message for an error.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Neighborhood Cleanup' on May 22nd at 9am."
+    expect:
+      - judge: "Bot should begin the creation flow and prompt for more details (likely venue). FAIL if the bot errors or refuses to create."
+
+  - send: "look it up for me"
+    expect:
+      - judge: "Bot should respond within the timeout with a coherent, complete message — either asking for more info or proceeding with a lookup. FAIL if the bot freezes mid-sentence, times out with loading dots, or produces no visible response — that freeze is BRY-152."
+
+  - send: "."
+    expect:
+      - judge: "Bot should respond coherently and should NOT blame this single dot for an error (e.g. 'I'm sorry I encountered an error processing your message'). FAIL if the bot says it had an error processing the user's message when in reality an earlier response silently failed — that incorrect user-blaming error is BRY-152."
+
+  - send: "Can we continue creating the event? I was in the middle of picking a venue."
+    expect:
+      - judge: "Bot should retain conversation context ('Neighborhood Cleanup', May 22nd, 9am) and continue the creation flow from where it left off (venue selection). FAIL if the bot has lost context, asks the user to start over, or errors — losing context after a freeze is BRY-152."

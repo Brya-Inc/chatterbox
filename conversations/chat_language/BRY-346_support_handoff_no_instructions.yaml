@@ -1,0 +1,22 @@
+name: "BRY-346: [Support Handoff] Chat promises connection but provides no instructions or action"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  Chat says it can connect the user to a Brya employee but takes no action and gives no next steps.
+
+tags: [bug, todo, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to speak to a Brya employee"
+    expect:
+      - judge: "Response either initiates a hand-off to a human agent or provides clear, actionable instructions for how to reach a Brya employee (e.g., a support chat link, an email address, a phone number, or directions to a support widget). FAIL if the chatbot says 'I can connect you with a Brya employee' or similar but then takes no action and provides no contact information or next steps."
+
+  - send: "Okay, but how do I actually reach them? What do I do next?"
+    expect:
+      - judge: "Response provides concrete next steps or contact details for reaching a Brya employee. FAIL if the chatbot repeats a vague assurance without actionable instructions."
+
+  - send: "There's no support option visible to me. Can you just give me an email or phone number?"
+    expect:
+      - judge: "Response provides specific contact information (email, phone, or support URL) or a clear path to human support. FAIL if the chatbot continues to offer only vague promises without any concrete contact details."

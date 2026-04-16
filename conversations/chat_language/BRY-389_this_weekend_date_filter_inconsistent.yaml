@@ -1,0 +1,17 @@
+name: "BRY-389: Chat date filtering inconsistent across users for 'this weekend'"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  "This weekend" must return only Saturday/Sunday events; must not silently broaden the query.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What's poppin this weekend?"
+    expect:
+      - judge: "Expected: Sage returns only events occurring on the Saturday and/or Sunday of this week (relative to {TODAY}). FAIL if the response silently expands to 'starting this weekend' and includes events beyond Sunday, or includes weekday (Mon–Fri) events prior to Saturday."
+  - send: "Just to confirm — are all of those events on Saturday or Sunday?"
+    expect:
+      - judge: "Expected: Sage confirms every listed event falls on Saturday or Sunday of this weekend (relative to {TODAY}). FAIL if Sage acknowledges including weekday or later-week events, or if the list contained such events."

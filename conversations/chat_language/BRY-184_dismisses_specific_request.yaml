@@ -1,0 +1,22 @@
+name: "BRY-184: Chatbot dismisses user requests with brief answers and topic changes"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  Specific scheduling requests get a one-sentence acknowledgement followed by an unrelated redirect question.
+
+tags: [bug, backlog, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I only want events on Tuesdays between 2 and 4pm. Can you find anything like that for me?"
+    expect:
+      - judge: "Response thoroughly addresses the specific request — searching for Tuesday afternoon events in the 2–4pm window — before any redirect or follow-up question. FAIL if the chatbot gives only a minimal one-sentence acknowledgement and immediately pivots to a generic question like 'What kind of feeling are you hoping to find?' without actually answering the scheduling request."
+
+  - send: "I specifically need Tuesdays, 2 to 4pm. Please don't suggest other days or times."
+    expect:
+      - judge: "Response respects the constraint and either presents Tuesday 2–4pm events or honestly states none are available in that window. FAIL if the chatbot again deflects with a vague emotional prompt instead of addressing the user's explicit scheduling criteria."
+
+  - send: "So are there any events matching that window or not?"
+    expect:
+      - judge: "Response gives a direct yes-or-no answer about Tuesday 2–4pm availability with supporting details. FAIL if the chatbot avoids the direct question or changes the subject again."

@@ -1,0 +1,39 @@
+name: "BRY-344: [Event RSVP] Chat executes RSVP without confirmation when user says 'maybe'"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  Chat immediately RSVPs the user when they express uncertainty with "maybe", instead of asking for explicit confirmation first.
+
+tags: [bug, todo, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events are coming up this week?"
+    expect:
+      - judge: "Bot should list or describe available upcoming events, either in text or as UI cards. FAIL if the bot says it has no events or cannot answer. Today is {TODAY}."
+
+  - send: "maybe I'll sign up for the second one"
+    expect:
+      - judge: |
+          The user expressed uncertainty with the word "maybe". The bot should
+          recognize this as ambiguous intent and ask the user to confirm whether
+          they actually want to RSVP before taking any action.
+          FAIL if the bot immediately executes an RSVP without asking for
+          explicit confirmation — this is the bug (BRY-344).
+
+  - send: "I haven't decided yet, I said maybe"
+    expect:
+      - judge: |
+          The bot should acknowledge that no RSVP has been made and wait for a
+          clear yes or no from the user. FAIL if the bot claims it already
+          RSVPed the user, or continues to push the RSVP through without a
+          clear confirmation from the user.
+
+  - send: "Actually no, I don't want to sign up"
+    expect:
+      - judge: |
+          Bot should accept the user's decision not to RSVP and confirm that
+          no action has been taken. FAIL if the bot says it already RSVPed the
+          user (indicating the earlier "maybe" was incorrectly treated as
+          confirmation).

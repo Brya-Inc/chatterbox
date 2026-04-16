@@ -1,0 +1,17 @@
+name: "BRY-154: Chatbot provides completely inconsistent event data across different users"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Published public events must appear consistently for any user querying by date.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events are happening on the next date that has at least one event in {EVENTS}?"
+    expect:
+      - judge: "Expected: Sage lists the event(s) scheduled for that date from {EVENTS} accurately, or clearly states the date. FAIL if Sage says 'no events on that date' when {EVENTS} contains at least one event on an upcoming date, or if Sage fabricates events not present in {EVENTS}."
+  - send: "Can you double-check — are you sure that's accurate? Anyone on the platform should see the same answer."
+    expect:
+      - judge: "Expected: Sage reaffirms the same event list consistently and does not contradict its earlier answer. FAIL if Sage now denies the earlier events existed or gives a materially different list."

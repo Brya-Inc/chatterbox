@@ -1,0 +1,22 @@
+name: "BRY-351: [Venue Creation] Chat confuses venue creation with event creation mid-flow"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user asks to create a venue and provides a name and address, the chatbot mid-flow asks "Where will this event be held?" — treating the venue creation as if it were event creation.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create a venue."
+    expect:
+      - judge: "Bot should acknowledge the request to create a venue and ask for venue details such as the venue name and address. FAIL if the bot asks for event-specific details like event date or treats this as event creation."
+
+  - send: "The venue name is 'The Shoe Store' and the address is 22 Elm Street, Springfield."
+    expect:
+      - judge: "Bot should accept the venue name and address, and either confirm the venue was created or ask for additional venue-specific fields. FAIL if the bot asks 'Where will this event be held?' or any other event-creation question — that means the bot has confused venue creation with event creation, which is the bug."
+
+  - send: "I just want to create the venue, not an event."
+    expect:
+      - judge: "Bot should correct course and confirm that it is completing the venue creation for 'The Shoe Store' at the provided address. FAIL if the bot continues asking event-related questions or cannot complete the venue creation independently of an event."

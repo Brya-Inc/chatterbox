@@ -1,0 +1,22 @@
+name: "BRY-316: Chat auto-selects specific day when user chooses 'next week' prompt"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When the user selects "next week" during event creation, the chatbot automatically assigns the event to Tuesday without asking which day of the week the user wants.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Neighborhood Potluck' next week at 6pm."
+    expect:
+      - judge: "Bot should ask 'Which day next week?' or equivalent to clarify the specific day. FAIL if the bot automatically assigns the event to Tuesday (or any other specific day) without asking the user to choose the day of the week — this is the bug."
+
+  - send: "I said next week but I haven't told you which day. Which day are you picking?"
+    expect:
+      - judge: "Bot should acknowledge that it needs to ask for the specific day and prompt the user with the options. FAIL if the bot insists on Tuesday or any other auto-selected day without user input."
+
+  - send: "I want it on Thursday next week."
+    expect:
+      - judge: "Bot should confirm the event is scheduled for Thursday of next week, not Tuesday or any other auto-selected day. FAIL if the bot uses a day other than Thursday."

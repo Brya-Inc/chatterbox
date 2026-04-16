@@ -1,0 +1,23 @@
+name: "BRY-372: Support chat page unstable - clicking header closes it and refresh returns to homepage"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Two related stability issues: clicking the chat header closes the chat, and refreshing the chat page navigates to homepage instead.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open the support chat by clicking the black chatbot button on the homepage"
+    expect:
+      - judge: "The support chat interface should open and be fully visible. State: FAIL if the chat does not open."
+
+  - send: "Click on the black header area of the support chat interface"
+    expect:
+      - judge: "Clicking the header area of the chat should have no effect — the chat should remain open. State: FAIL if clicking the header closes the chat or navigates the user back to the homepage."
+
+  - send: "Reopen the support chat and then press the browser refresh button while the chat is open"
+    expect:
+      - judge: "Refreshing the browser while the support chat is open should reload the chat page in the same state. State: FAIL if refreshing navigates the user to the homepage instead of reloading the chat."

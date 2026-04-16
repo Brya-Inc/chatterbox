@@ -1,0 +1,27 @@
+name: "BRY-210: Chat button disappears after page reload — requires logout/login to restore"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  After triggering a chat freeze (e.g. sending whitespace-only message) and reloading the page, the chat entry points vanish from both the top menu and the side bubble until the user logs out and back in.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open the chatbot from the homepage and confirm the chat button is visible in the top menu / side bubble before starting"
+    expect:
+      - judge: "The chat button should be visible on the homepage (top menu and/or side bubble) and the chat should open normally. FAIL if the chat button is missing at baseline."
+
+  - send: "Send a whitespace-only message to trigger the known chat-freeze state"
+    expect:
+      - judge: "The chat should reach a frozen / unresponsive state (baseline for this regression test). FAIL if no chat freeze / stuck state can be induced — that is a different bug but blocks the rest of this test."
+
+  - send: "Reload the page to escape the frozen chat state"
+    expect:
+      - judge: "After the page reload, the chat button should still be visible on the homepage (top menu or side bubble) so the user can reopen chat. FAIL if the chat button is missing from both the top menu and the side bubble after the reload."
+
+  - send: "Reload the page one more time and re-check for the chat button"
+    expect:
+      - judge: "The chat button must be restored and usable after one or more reloads without needing to log out. FAIL if multiple reloads still fail to restore the chat button and only logout/login restores it."

@@ -1,0 +1,51 @@
+name: "BRY-563: Chat offers to RSVP user but fails to complete"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  After asking for an RSVP, receiving a carousel of events, selecting one, and confirming "Yes, sign me up!", the chat fails to complete the RSVP and redirects the user to the event page instead.
+
+tags: [bug, backlog, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "RSVP me to an event"
+    expect:
+      - judge: |
+          Bot should acknowledge the request and either ask which event the
+          user wants to RSVP to, or present a list/carousel of available
+          events. FAIL if the bot refuses or says it cannot help with RSVPs.
+
+  - send: "Sign me up for the first one"
+    expect:
+      - judge: |
+          Bot should identify the first event and ask the user to confirm the
+          RSVP before completing it. It should name the event. FAIL if the
+          bot skips confirmation and immediately attempts (or claims) an RSVP,
+          or says it cannot perform RSVPs at this point.
+
+  - send: "Yes, sign me up!"
+    expect:
+      - judge: |
+          The user has explicitly confirmed. The bot should complete the RSVP
+          and confirm success with the event name.
+          FAIL if the bot says it "wasn't able to confirm your RSVP" or
+          redirects the user to sign up directly on the event page — this is
+          the bug (BRY-563). If the RSVP fails, the bot must explain the
+          technical reason rather than deflecting to a manual workaround.
+
+  - send: "Why couldn't you complete my RSVP? I confirmed yes."
+    expect:
+      - judge: |
+          If the RSVP failed in the previous turn, the bot should now provide
+          a clear technical explanation for the failure rather than repeating
+          the suggestion to use the event page. FAIL if the bot again deflects
+          with "try signing up directly" or gives no explanation.
+
+final:
+  judge: |
+    Across the full conversation, did the bot successfully RSVP the user to
+    an event after the user confirmed "Yes, sign me up!"? PASS if the bot
+    confirmed the RSVP was completed and the event appears in {MY_EVENTS}.
+    FAIL if the bot failed to complete the RSVP after explicit confirmation
+    and/or redirected the user to sign up manually.

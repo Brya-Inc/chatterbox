@@ -1,0 +1,24 @@
+name: "BRY-356: In-progress event shows as 'upcoming' but displays 'already passed'"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Contradiction between upcoming-events list and detail page for events currently in progress.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Browser: load home page and find an event currently in progress (start time has passed, end time has not)."
+    expect:
+      - judge: "An in-progress event is locatable via the upcoming events list or via events data. FAIL if there is no event currently in progress to test with (skip, not fail)."
+  - send: "Browser: confirm whether the in-progress event appears in the 'upcoming events' list."
+    expect:
+      - judge: "Either the event is absent from the upcoming list (correct), or it is present with a status label such as 'Event in progress — registration closed'. FAIL if it shows with no qualifying status."
+  - send: "Browser: click into the event's detail page."
+    expect:
+      - judge: "Detail page shows accurate status consistent with listing — either 'in progress', 'registration closed', or similar. FAIL if detail page shows 'already passed' error while listing says upcoming (the original bug)."
+  - send: "Browser: attempt to RSVP from the detail page."
+    expect:
+      - judge: "RSVP action either succeeds, or is disabled with a clear consistent message matching listing state. FAIL if RSVP is blocked with 'already passed' while listing called it upcoming."

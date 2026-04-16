@@ -1,0 +1,50 @@
+name: "BRY-350: [Event RSVP] Chat fails to cancel RSVP and provides confusing manual workaround"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  After confirming RSVP cancellation (including providing the exact event name), the chat fails to execute the cancellation, asks intrusive emotional questions, and tells the user to cancel manually.
+
+tags: [bug, backlog, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events am I signed up for?"
+    expect:
+      - judge: "Bot should list the events the user is currently RSVP'd to, drawn from {MY_EVENTS}. FAIL if the bot cannot retrieve the user's RSVPs or says they have none when {MY_EVENTS} is non-empty."
+
+  - send: "Please cancel my RSVP to the first event on that list."
+    expect:
+      - judge: |
+          Bot should identify the specific event and ask the user to confirm
+          the cancellation. It should name the event clearly.
+          FAIL if the bot immediately cancels without confirming, or says it
+          cannot perform cancellations at all.
+
+  - send: "Yes, please cancel it."
+    expect:
+      - judge: |
+          Bot should attempt to cancel the RSVP and confirm success.
+          FAIL if the bot: (a) fails to execute the cancellation and instead
+          asks the user for the "exact event name" when the user already
+          provided it earlier, (b) apologizes with emotional language such as
+          "I'm sorry to hear that", or (c) tells the user to cancel manually
+          via the website — these are all symptoms of BRY-350.
+
+  - send: "I already told you the event name. Just cancel it."
+    expect:
+      - judge: |
+          Bot should proceed with the cancellation using the event name
+          already provided in the conversation. FAIL if the bot again asks
+          for the event name, fails to cancel, redirects to manual steps, or
+          asks intrusive emotional questions like "Is everything okay?" —
+          these behaviors are the reported bug.
+
+  - send: "Can you confirm whether my RSVP was actually cancelled?"
+    expect:
+      - judge: |
+          Bot should clearly state whether the RSVP was successfully cancelled
+          or not. If the cancellation failed, it should explain why technically
+          rather than giving vague apologies or emotional commentary. FAIL if
+          the bot is ambiguous, says to cancel manually, or asks personal
+          questions unrelated to the task.

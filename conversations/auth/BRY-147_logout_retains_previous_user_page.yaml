@@ -1,0 +1,21 @@
+name: "BRY-147: Logging out from event page causes next user login to open on previous user's event page (Bug #1)"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  System retained previous user's page state after logout; new user landed on old user's event page instead of their own homepage.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in as User A and navigate to any event detail page (URL should be /event/<id>)."
+    expect:
+      - judge: "User A is on the event detail page. FAIL if navigation did not occur or user is not authenticated."
+  - send: "Without returning to the homepage, open the profile menu and click Logout."
+    expect:
+      - judge: "User A is logged out. FAIL if logout action fails."
+  - send: "On the same browser tab (still on the event page URL), sign in as User B."
+    expect:
+      - judge: "User B should land on their own homepage (/loggedInHome) after login. FAIL if User B lands directly on User A's event detail page because the system retained the previous user's page state."

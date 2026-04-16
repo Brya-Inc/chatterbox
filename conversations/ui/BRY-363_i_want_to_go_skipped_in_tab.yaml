@@ -1,0 +1,21 @@
+name: "BRY-363: 'I want to go' button skipped in Tab order then returns"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Tab order should match visual top-to-bottom layout and never skip-then-return to an element.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Browser: navigate to an event detail page with an 'I want to go' button visible."
+    expect:
+      - judge: "Event detail page loads with 'I want to go' button visible. FAIL if page does not load or button missing."
+  - send: "Browser: place focus at the top of the page and record the sequence of focused elements as Tab is pressed until past both the 'I want to go' button and the share button."
+    expect:
+      - judge: "'I want to go' button is focused before the share button in tab order, matching visual layout. FAIL if Tab skips 'I want to go', focuses share, then returns to 'I want to go' (original bug)."
+  - send: "Browser: verify no element is skipped and then returned to in the recorded sequence."
+    expect:
+      - judge: "Every interactive element is visited exactly once in visual order. FAIL if any element is skipped-then-returned-to."

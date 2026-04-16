@@ -1,0 +1,23 @@
+name: "BRY-609: Two-finger swipe back from homepage triggers \"No email provided\" error popup"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Using a trackpad two-finger swipe back gesture from the homepage after login navigates to a Brya error page with "No email provided" popup.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in and land on the homepage"
+    expect:
+      - judge: "The user should be successfully logged in and the homepage should be fully loaded. State: FAIL if login fails or homepage does not load."
+
+  - send: "Use a two-finger trackpad swipe back gesture (browser back navigation) from the homepage"
+    expect:
+      - judge: "The browser should navigate to the previous page in browser history without triggering any error popup. State: FAIL if a popup or error message reading 'No email provided, please start from the login page' appears on screen."
+
+  - send: "If an error popup appeared, dismiss it and observe the resulting page state"
+    expect:
+      - judge: "After dismissing any error, the user should remain on a valid Brya page with their session intact — they should still be logged in. State: FAIL if the user session is lost, or if the error popup required the user to log in again to continue."

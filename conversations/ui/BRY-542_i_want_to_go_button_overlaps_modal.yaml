@@ -1,0 +1,23 @@
+name: "BRY-542: \"I want to go\" button overlaps with \"One more thing\" signup prompt creating visual clutter"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  When a logged-out user clicks "I want to go" on an event, the signup/login modal appears but the button remains visible, causing overlap.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "While logged out, navigate to an event detail page"
+    expect:
+      - judge: "The event detail page should be visible with an 'I want to go' button accessible to unauthenticated users. State: FAIL if the page does not load or the button is not present."
+
+  - send: "Click the 'I want to go' button on the event detail page while logged out"
+    expect:
+      - judge: "A 'One more thing' signup or login modal should appear, and the 'I want to go' button should be hidden or removed from view so there is no visual overlap between the button and the modal. State: FAIL if the 'I want to go' button remains visible and overlaps with the 'One more thing' modal, creating visual clutter."
+
+  - send: "Inspect the modal and surrounding UI elements for any overlapping or visually broken elements"
+    expect:
+      - judge: "No UI elements should overlap the modal; the layout should be clean with only the modal visible on top of a properly dimmed background. State: FAIL if any buttons or interactive elements from underneath the modal are still visible or interact-able while the modal is open."

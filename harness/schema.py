@@ -25,6 +25,7 @@ class Turn:
 class Setup:
     fresh_chat: bool = False
     require_events: bool = False
+    admin_clear: bool = False  # click Admin → "Start fresh conversation" before test
 
 
 @dataclass
@@ -98,6 +99,7 @@ def load_conversation(path: Path) -> Conversation:
     setup = Setup(
         fresh_chat=bool(setup_raw.get("fresh_chat", False)),
         require_events=bool(setup_raw.get("require_events", False)),
+        admin_clear=bool(setup_raw.get("admin_clear", False)),
     )
 
     turns_raw = data.get("turns") or []
@@ -131,4 +133,4 @@ def load_conversation(path: Path) -> Conversation:
 def discover_conversations(root: Path) -> list[Path]:
     if not root.exists():
         return []
-    return sorted(p for p in root.rglob("*.yaml"))
+    return sorted(p for p in root.rglob("*.yaml") if p.name != "config.yaml")

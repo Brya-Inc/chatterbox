@@ -1,0 +1,27 @@
+name: "BRY-203: Chat returns long system code instead of response when creating international venue"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  When asked to create a venue in a non-US country with an international address format, the chatbot exposes raw system code or debug output instead of a user-friendly message.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Create a venue called 'Tokyo Tea House' at 1-chome-2-3 Shibuya, Shibuya City, Tokyo 150-0002, Japan."
+    expect:
+      - judge: |
+          Bot should respond with a natural-language message — either successfully creating
+          the venue, or explaining (in plain English) that international addresses are not
+          supported. FAIL if the bot's reply contains raw system code, stack traces, JSON
+          blobs, debug output, error codes, or anything that looks like internal machinery
+          being leaked to the user — exposing system code is BRY-203.
+
+  - send: "Create a venue called 'Paris Bistro' at 10 Rue de Rivoli, 75001 Paris, France."
+    expect:
+      - judge: "Bot should respond with a normal, user-facing message. FAIL if the response contains raw code, tracebacks, or debug output — BRY-203."
+
+  - send: "Create a venue called 'London Pub' at 221B Baker Street, London NW1 6XE, United Kingdom."
+    expect:
+      - judge: "Bot should respond in plain natural language. FAIL if any raw system code, JSON payloads, or debug text leaks into the response — BRY-203."

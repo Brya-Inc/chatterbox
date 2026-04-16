@@ -1,0 +1,28 @@
+name: "BRY-486: Logging into second account in new tab overwrites first account's session and shows errors/stale UI"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  Logging into a second account in a new tab silently overwrites the first account's session browser-wide,
+  causing errors ("Only admins can access draft events", "No token found") or a sudden account switch on reload.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in as Account A (mike@brya.com) in Tab 1 and confirm the home page loads correctly"
+    expect:
+      - judge: "Account A should be logged in and the home page should display correctly with Account A's identity. FAIL if login fails or the wrong account is shown."
+
+  - send: "Open a new Tab 2, navigate to /login, and log in as a different Account B"
+    expect:
+      - judge: "Account B should log in successfully in Tab 2 without any error. FAIL if the login itself errors out."
+
+  - send: "Switch back to Tab 1 and reload the page"
+    expect:
+      - judge: "Tab 1 should still show Account A's session, or at minimum clearly notify the user that the session has changed. FAIL if Tab 1 silently switches to Account B's session, shows Account A's stale UI with errors like 'Only admins can access draft events' or 'No token found', or crashes without explanation."
+
+  - send: "Attempt any authenticated action in Tab 1 (e.g. open an event)"
+    expect:
+      - judge: "The action should succeed under Account A's permissions or show a clear session-change notification. FAIL if the action results in errors such as 'Only admins can access draft events' or 'No token found' due to session contamination from Tab 2."

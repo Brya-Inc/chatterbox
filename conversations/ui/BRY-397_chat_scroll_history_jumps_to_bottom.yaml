@@ -1,0 +1,23 @@
+name: "BRY-397: Chat scroll to load history glitches and jumps back to bottom instead of loading previous messages"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Scrolling up in the chat to load history causes a glitch where a loading indicator appears briefly then the view jumps back to the bottom without loading older messages.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open the chat interface after an extended period of inactivity or after a page reload"
+    expect:
+      - judge: "The chat interface should open and display recent messages. State: FAIL if the chat does not open or displays an error."
+
+  - send: "Scroll upward in the chat message list until a loading indicator appears at the top"
+    expect:
+      - judge: "When scrolling up, a loading/spinner indicator should appear and older messages should load above the current messages, with scroll position maintained upward. State: FAIL if the loading indicator appears briefly but the chat view snaps or jumps back to the bottom without loading any older messages."
+
+  - send: "Attempt to scroll up a second time after the initial glitch"
+    expect:
+      - judge: "On the second scroll-up attempt, older message history should load successfully and scroll position should be maintained. State: FAIL if the history still fails to load on the second attempt or continues to jump back to the bottom."

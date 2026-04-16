@@ -1,0 +1,35 @@
+name: "BRY-310: Chat offers 'None to choose from' as feedback option when no events attended"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user asks to give feedback but has not attended any events, the chat presents a contradictory "None to choose from" clickable button instead of simply stating the user has no past events.
+
+tags: [bug, backlog, feedback]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I'd like to give feedback on an event I attended."
+    expect:
+      - judge: |
+          If the user has no past attended events, the bot should clearly state
+          that and not present any selectable event options.
+          FAIL if the bot presents a button or option labelled "None to choose
+          from" — this is a contradictory UI element that is the bug (BRY-310).
+          PASS if the bot simply says the user has not attended any events yet.
+
+  - send: "What events can I give feedback on?"
+    expect:
+      - judge: |
+          Bot should reiterate that no past attended events are available for
+          feedback. FAIL if it presents any selectable options (including a
+          "None to choose from" button), or implies there are events the user
+          can choose from when there are none.
+
+  - send: "Can I give feedback on an upcoming event?"
+    expect:
+      - judge: |
+          Bot should clarify that feedback is only available for events the
+          user has already attended, and that upcoming events are not eligible.
+          FAIL if the bot offers to collect feedback on upcoming or unenrolled
+          events, or again shows a "None to choose from" option.

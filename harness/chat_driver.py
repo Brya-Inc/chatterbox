@@ -18,6 +18,11 @@ from playwright.sync_api import Page, TimeoutError as PWTimeout
 from .config import Config
 
 INPUT_SELECTOR = "[placeholder='Talk to Sage']"
+_INPUT_SELECTORS = [
+    "[placeholder='Talk to Sage']",
+    "[placeholder='Send message']",
+    "[placeholder='Message Sage']",
+]
 
 # Short placeholder bubbles Sage emits while it's still working. These must not
 # be treated as the final response — keep polling until something else appears.
@@ -40,6 +45,7 @@ class ChatDriver:
         self.page = page
         self.cfg = cfg
         self.response_selector = cfg.response_selector
+        self._active_input = INPUT_SELECTOR  # resolved in open_chat
 
     # ------------------------------------------------------------------
     # opening the chat
@@ -47,58 +53,206 @@ class ChatDriver:
 
     def open_chat(self) -> None:
         self.page.wait_for_load_state("load")
-        self._dismiss_inline_checkin()
 
-        if self.page.is_visible(INPUT_SELECTOR):
-            self._wait_for_typing_to_clear()
-            return
+        # Dismiss overlays in a loop — the page can show several inline prompts
+        # sequentially (e.g. "Interested in hosting?" then "Tell me more about…").
+        for attempt in range(6):
+            self._dismiss_inline_checkin()
 
-        for selector, label in [
-            ("button[aria-label='Open chat with Sage']", "floating chat button"),
-            ("button:has-text('Continue chat with Sage')", "continue-chat button"),
-        ]:
+            # Already open?
+            if self._resolve_input_selector():
+                self._wait_for_typing_to_clear()
+                return
+
+            # Try known FAB / panel entry points.
+            opened = False
+            for selector, label in [
+                ("button[aria-label='Open chat with Sage']", "floating chat button"),
+                ("button:has-text('Continue chat with Sage')", "continue-chat button"),
+            ]:
+                try:
+                    self.page.wait_for_selector(selector, state="visible", timeout=3000)
+                    self.page.click(selector)
+                    print(f"  [chat] opened via {label}")
+                    opened = True
+                    break
+                except PWTimeout:
+                    continue
+
+            if not opened:
+                # Chat may already be open but input is behind a suggestion widget.
+                if self.page.is_visible("button[aria-label='Close chat']"):
+                    print("  [chat] already open (Close chat button visible)")
+                    opened = True
+                else:
+                    for suggestion in ("Something social", "Something active", "Surprise me"):
+                        sel = f"button:has-text('{suggestion}')"
+                        if self.page.is_visible(sel):
+                            self.page.click(sel)
+                            print(f"  [chat] opened via suggestion '{suggestion}'")
+                            opened = True
+                            break
+
+            if opened:
+                break
+
+            # Not opened yet — maybe another overlay just appeared; loop and dismiss.
+            print(f"  [chat] no entry point on attempt {attempt + 1}, rechecking overlays…")
+            time.sleep(1)
+        else:
             try:
-                self.page.wait_for_selector(selector, state="visible", timeout=5000)
-                self.page.click(selector)
-                print(f"  [chat] opened via {label}")
+                self.page.screenshot(path="debug_chat_open_failure.png", timeout=5000)
+            except Exception:
+                pass
+            buttons = self.page.evaluate(
+                "() => Array.from(document.querySelectorAll('button'))"
+                ".map(b => (b.getAttribute('aria-label') || b.innerText.trim().slice(0,60)))"
+                ".filter(s => s).join(' | ')"
+            )
+            raise RuntimeError(
+                f"Could not open chat dialog — no known entry point found.\n"
+                f"URL: {self.page.url}\n"
+                f"Buttons: {buttons[:1000]}\n"
+                f"Screenshot: debug_chat_open_failure.png"
+            )
+
+        # Wait for any of the known input selectors to become visible.
+        for sel in _INPUT_SELECTORS:
+            try:
+                self.page.wait_for_selector(sel, state="visible", timeout=5000)
+                self._active_input = sel
+                print(f"  [chat] input found: {sel!r}")
                 break
             except PWTimeout:
                 continue
         else:
-            for suggestion in ("Something social", "Something active", "Surprise me"):
-                sel = f"button:has-text('{suggestion}')"
-                if self.page.is_visible(sel):
-                    self.page.click(sel)
-                    print(f"  [chat] opened via suggestion '{suggestion}'")
-                    break
-            else:
-                self.page.screenshot(path="debug_chat_open_failure.png")
-                buttons = self.page.evaluate(
-                    "() => Array.from(document.querySelectorAll('button'))"
-                    ".map(b => (b.getAttribute('aria-label') || b.innerText.trim().slice(0,60)))"
-                    ".filter(s => s).join(' | ')"
-                )
-                raise RuntimeError(
-                    f"Could not open chat dialog — no known entry point found.\n"
-                    f"URL: {self.page.url}\n"
-                    f"Buttons: {buttons[:1000]}\n"
-                    f"Screenshot: debug_chat_open_failure.png"
-                )
-
-        self.page.wait_for_selector(INPUT_SELECTOR, state="visible", timeout=15000)
+            raise RuntimeError(
+                f"Chat opened but no input field became visible.\n"
+                f"URL: {self.page.url}"
+            )
         self._wait_for_typing_to_clear()
 
-    def _dismiss_inline_checkin(self) -> None:
-        """The post-event inline check-in widget can block chat entry points."""
-        if self.page.is_visible(INPUT_SELECTOR):
+    def _resolve_input_selector(self) -> bool:
+        """Check all known input selectors; set self._active_input to the visible one.
+        Returns True if found, False otherwise."""
+        for sel in _INPUT_SELECTORS:
+            if self.page.is_visible(sel):
+                self._active_input = sel
+                return True
+        return False
+
+    def clear_chat_admin(self) -> None:
+        """
+        Clear chat history via the admin panel:
+        Profile bubble → Admin → Start fresh conversation (fallback: Delete all messages).
+        Navigates back to loggedInHome and reopens the chat afterwards.
+
+        For non-admin users (no Brya admin access), falls back to a page reload
+        + chat reopen instead — the best we can do without admin privileges.
+        """
+        # Dismiss any overlays that might block the profile button
+        self._dismiss_inline_checkin()
+
+        # Open profile menu — use JS to find by text content (handles multi-node buttons)
+        clicked = self.page.evaluate("""
+            () => {
+                const btn = Array.from(document.querySelectorAll('button')).find(
+                    b => /\\b(michael|mike|arianna|arianalmark|^[A-Z]$)\\b/i.test(b.innerText || '')
+                );
+                if (btn) { btn.click(); return true; }
+                return false;
+            }
+        """)
+        if not clicked:
+            # Profile button not found — fall back to page reload.
+            print("  [admin] profile menu button not found, falling back to page reload")
+            self._reset_via_reload()
             return
+
+        print("  [admin] opened profile menu")
+        time.sleep(0.5)
+
+        # Click Admin — only available for Brya admins. Shorter timeout since we
+        # have a graceful fallback for non-admin users.
         try:
-            self.page.wait_for_selector("button:has-text('No')", state="visible", timeout=3000)
-            self.page.click("button:has-text('No')")
-            print("  [chat] dismissed inline check-in")
-            time.sleep(1)
+            self.page.wait_for_selector("text=Admin", state="visible", timeout=3000)
+            self.page.click("text=Admin")
+            print("  [admin] clicked Admin")
+        except PWTimeout:
+            # No admin access (non-Brya user) — close the profile menu and fall back.
+            print("  [admin] Admin option not available (non-admin user), falling back to page reload")
+            self.page.keyboard.press("Escape")
+            time.sleep(0.3)
+            self._reset_via_reload()
+            return
+
+        # Click "Start fresh conversation" (fallback: "Delete all messages")
+        cleared = False
+        for label in ["start fresh conversation", "delete all messages"]:
+            try:
+                sel = f"text={label}"
+                self.page.wait_for_selector(sel, state="visible", timeout=5000)
+                self.page.click(sel)
+                print(f"  [admin] clicked '{label}'")
+                cleared = True
+                break
+            except PWTimeout:
+                continue
+
+        if not cleared:
+            raise RuntimeError("Could not find 'Start fresh conversation' or 'Delete all messages' in admin panel")
+
+        # Handle any confirmation dialog
+        try:
+            self.page.wait_for_selector("button:has-text('Confirm')", state="visible", timeout=2000)
+            self.page.click("button:has-text('Confirm')")
         except PWTimeout:
             pass
+
+        time.sleep(2)
+
+        # Navigate back to home cleanly
+        self.page.goto(self.cfg.base_url + "/loggedInHome")
+        self.page.wait_for_load_state("networkidle")
+        time.sleep(1)
+        print("  [admin] chat cleared and ready")
+
+    def _reset_via_reload(self) -> None:
+        """
+        Non-admin fallback for clear_chat_admin(): reload the home page and
+        reopen the chat. Does NOT wipe server-side chat history (that requires
+        admin access), but gives tests a clean UI state to work from.
+        """
+        self.page.goto(self.cfg.base_url + "/loggedInHome")
+        self.page.wait_for_load_state("networkidle")
+        time.sleep(1)
+        print("  [admin] chat reset via page reload (server-side history not cleared)")
+
+    def _dismiss_inline_checkin(self) -> None:
+        """Dismiss any overlay/prompt that blocks chat entry points.
+        Loops until no more dismissible buttons are found or an input appears."""
+        _DISMISS_LABELS = [
+            "Not right now", "Maybe", "No",
+            "I won't be going", "Not interested", "Skip",
+        ]
+        for _ in range(5):
+            if self._resolve_input_selector():
+                return
+            dismissed = False
+            for label in _DISMISS_LABELS:
+                # Use double-quoted selector to handle apostrophes in label text.
+                selector = f'button:has-text("{label}")'
+                try:
+                    self.page.wait_for_selector(selector, state="visible", timeout=1500)
+                    self.page.click(selector)
+                    print(f"  [chat] dismissed overlay via '{label}'")
+                    time.sleep(0.8)
+                    dismissed = True
+                    break
+                except PWTimeout:
+                    continue
+            if not dismissed:
+                break
 
     def _wait_for_typing_to_clear(self) -> None:
         try:
@@ -120,8 +274,8 @@ class ChatDriver:
         prev_last = self._last_response_text()
         prev_event_hrefs = self._chat_event_hrefs()
 
-        self.page.fill(INPUT_SELECTOR, message)
-        self.page.press(INPUT_SELECTOR, "Enter")
+        self.page.fill(self._active_input, message)
+        self.page.press(self._active_input, "Enter")
 
         try:
             self.page.wait_for_function(

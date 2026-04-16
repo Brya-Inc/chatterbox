@@ -1,0 +1,24 @@
+name: "BRY-541: \"Send again\" button provides no feedback when clicked - unclear if email was resent"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  On the magic link confirmation page, clicking "Send again" gives no visual feedback, no loading state,
+  and no success or failure message, leaving the user unable to tell if the email was resent.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to /login, enter a valid email, click Continue, and reach the magic link confirmation page"
+    expect:
+      - judge: "The magic link confirmation page should be displayed, showing the 'Send again' button. FAIL if the page is not reached."
+
+  - send: "Click the 'Send again' button on the magic link confirmation page"
+    expect:
+      - judge: "After clicking 'Send again', the button should show a loading state during the request, then display a confirmation message such as 'Email sent to [email]' on success, or a clear error message on failure. FAIL if clicking the button produces no visual feedback, no loading state, no confirmation message, and no error — leaving the user with no indication of whether the email was resent."
+
+  - send: "Click the 'Send again' button multiple times in rapid succession"
+    expect:
+      - judge: "The button should be temporarily disabled after the first click to prevent spam-clicking. FAIL if the button remains clickable with no throttling or disabling, allowing unlimited repeated requests with no feedback."

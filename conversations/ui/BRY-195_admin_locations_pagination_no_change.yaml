@@ -1,0 +1,27 @@
+name: "BRY-195: Admin locations page pagination arrows don't change displayed locations"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  On Admin → Locations, clicking the pagination right-arrow updates the pagination counter but leaves the same 25 locations displayed.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to Admin → Locations page as a Brya admin user"
+    expect:
+      - judge: "The Admin Locations page should load with a list of locations and a pagination control at the bottom showing something like '1-25 of 111'. FAIL if the page does not load or pagination controls are missing."
+
+  - send: "Record the first few location names currently displayed (page 1, items 1-25)"
+    expect:
+      - judge: "The first page of 25 locations should be clearly visible and identifiable for later comparison. FAIL if locations are not rendered."
+
+  - send: "Click the right-arrow pagination control to advance to the next page"
+    expect:
+      - judge: "The pagination counter should update (e.g. to '26-50 of 111') AND the displayed list of locations should change to show the next 25 distinct locations. FAIL if the counter advances but the same 25 locations remain visible."
+
+  - send: "Compare the currently displayed locations to the ones from step 2"
+    expect:
+      - judge: "The currently displayed locations should be a different set than the first page. FAIL if the location list is identical to the first page despite the pagination counter showing 26-50."

@@ -1,0 +1,27 @@
+name: "BRY-339: Logout flow inconsistent — redirects randomly to homepage or login page"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Logout destination varied unpredictably across attempts: sometimes login page, sometimes logged-out homepage, sometimes chat visible on logged-out homepage.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in to the account, then click Logout from the profile menu. Record the final URL and UI state."
+    expect:
+      - judge: "Logout completes and the user lands on a specific page (login or homepage). Record outcome #1."
+  - send: "Log in again and click Logout. Record the final URL and UI state."
+    expect:
+      - judge: "Logout completes. Record outcome #2."
+  - send: "Log in again and click Logout. Record the final URL and UI state."
+    expect:
+      - judge: "Logout completes. Record outcome #3."
+  - send: "Log in again and click Logout. Record the final URL and UI state."
+    expect:
+      - judge: "Logout completes. Record outcome #4."
+
+final:
+  judge: "All four logout attempts should produce the same destination page and UI state (single consistent flow). FAIL if outcomes differ — e.g., some go to login page, some stay on homepage, some show chat on logged-out homepage — indicating no reliable pattern."

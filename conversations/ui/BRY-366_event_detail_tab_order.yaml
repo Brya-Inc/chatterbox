@@ -1,0 +1,21 @@
+name: "BRY-366: Event detail modal traps focus on bottom buttons — cannot navigate full modal"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Closed as by design — event detail is a regular page, not a modal; fixed RSVP bar tab order was fixed in PR #195.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Browser: navigate to an event detail page."
+    expect:
+      - judge: "Event detail page loads as a regular page (not a modal). FAIL if it renders as a modal with focus trap."
+  - send: "Browser: Tab through the bottom RSVP bar and confirm tab order is logical within it."
+    expect:
+      - judge: "Tab order within the fixed RSVP bar follows visual left-to-right order (fix from PR #195). FAIL if RSVP bar tab order regresses to illogical order."
+  - send: "Browser: continue tabbing through the rest of the page beyond the RSVP bar."
+    expect:
+      - judge: "Tab continues to all other interactive elements on the page — focus is not trapped in the bottom bar. FAIL if focus is trapped on bottom buttons and cannot reach the rest of the page (original bug)."

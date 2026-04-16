@@ -1,0 +1,26 @@
+name: "BRY-348: [Event Creation] Chat forgets capacity already provided and asks again"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  The chatbot explicitly acknowledges a capacity provided early in the creation flow, then later asks "Would you like to set a cap on attendance?" as if the capacity was never given.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Painting Workshop' on May 12th at 2pm with a max of 8 people."
+    expect:
+      - judge: "Bot should acknowledge all the details including the 8-person capacity. FAIL if the bot does not acknowledge the capacity or immediately asks for it again."
+
+  - send: "The venue is the Art Studio at 100 Main Street."
+    expect:
+      - judge: "Bot should accept the venue and continue the flow. FAIL if the bot asks about capacity again when the user already specified 8 people."
+
+  - send: "A brief description: a relaxed afternoon of guided painting for beginners."
+    expect:
+      - judge: "Bot should accept the description and move toward completion or confirmation. FAIL if the bot asks 'Would you like to set a cap on attendance?' or any similar capacity question — the user already told the bot the cap was 8 people, so asking again is the bug."
+
+  - send: "Yes, let's go ahead and publish it."
+    expect:
+      - judge: "Bot should confirm the event 'Painting Workshop' has been created with a capacity of 8. FAIL if the bot is still asking about attendance limits."

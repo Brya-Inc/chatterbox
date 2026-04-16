@@ -1,0 +1,21 @@
+name: "BRY-197: Chat mixes old conversation into new response"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  After a long prior topic, a new unrelated request must not pull content from the old thread.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to edit a published event. What are my options?"
+    expect:
+      - judge: "Expected: Sage responds about editing a published event. FAIL if Sage ignores the topic entirely."
+  - send: "What does unpublishing an event mean?"
+  - send: "If I unpublish, can I republish later?"
+  - send: "What fields are even editable after publish?"
+  - send: "Does editing notify RSVP'd users?"
+  - send: "Okay, switching topics completely — I want to create a brand new event. How do I start?"
+    expect:
+      - judge: "Expected: Sage responds only about starting a new event creation flow (asking for title, date, location, etc.). FAIL if the response mixes in or injects content about editing, publishing, or unpublishing events from the earlier conversation."

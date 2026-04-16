@@ -1,0 +1,49 @@
+name: "BRY-343: [Feedback Flow] Chat offers unavailable feature then says it can't help"
+description: |
+  Status: In Progress — currently being worked on, failure is expected
+  Chat offers to help with feedback on an upcoming event, but when the user accepts the offer, the chat backtracks and says "I can't collect or save feedback directly."
+
+tags: [bug, in_progress, feedback]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to share feedback from an event."
+    expect:
+      - judge: |
+          Bot should offer to help with event feedback. It must only offer
+          to collect feedback for past attended events — it should NOT offer
+          to collect feedback on upcoming events.
+          FAIL if the bot offers feedback on upcoming events and then
+          immediately contradicts itself by saying it cannot collect feedback
+          — this contradictory behavior is the bug (BRY-343).
+
+  - send: "Yes, I'd like to share my feedback."
+    expect:
+      - judge: |
+          Having offered to help, the bot must now follow through and begin
+          the feedback collection flow (e.g. ask which past event, ask for
+          a rating, etc.).
+          FAIL if the bot says "I can't collect or save feedback directly"
+          or any equivalent backtrack after having just offered to help —
+          this is the core bug in BRY-343.
+
+  - send: "You just offered to help with feedback and now you're saying you can't?"
+    expect:
+      - judge: |
+          Bot should acknowledge the contradiction and either: (a) proceed
+          with feedback collection if it is actually able to, or (b) clearly
+          explain the correct scope of what it can help with (only past
+          attended events) without repeating the contradictory offer.
+          FAIL if the bot continues to be contradictory or gives a vague
+          non-answer.
+
+  - send: "What feedback can you actually help me with?"
+    expect:
+      - judge: |
+          Bot should give a clear, accurate description of what feedback
+          features it supports (e.g. "I can collect feedback for events you
+          have already attended"). FAIL if the bot again offers to help with
+          something it then cannot deliver, or gives a confusing or
+          inconsistent answer.

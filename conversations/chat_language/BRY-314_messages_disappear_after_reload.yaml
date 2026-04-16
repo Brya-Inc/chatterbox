@@ -1,0 +1,17 @@
+name: "BRY-314: Chat messages temporarily disappear after page reload — self-resolves"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  All sent/received messages must persist consistently across reloads, with no gaps.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Hi Sage — please remember this exact phrase: purple-otter-42."
+    expect:
+      - judge: "Expected: Sage acknowledges the message or otherwise responds. FAIL if no response is produced."
+  - send: "What phrase did I just ask you to remember?"
+    expect:
+      - judge: "Expected: Sage recalls 'purple-otter-42' (or clearly references the phrase from the previous turn). FAIL if Sage claims no such prior message exists or the earlier message appears to have been lost from history."

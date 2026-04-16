@@ -1,0 +1,18 @@
+name: "BRY-362: Login email link fails with generic error message"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Clicking a magic-link login email produced an unhelpful generic error instead of authenticating or explaining the failure.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to the login page and enter a valid email address to request a login link."
+    expect:
+      - judge: "Login page accepts the email and indicates that a login email has been sent. FAIL if the request fails."
+  - send: "Open the received login email and click the login link."
+    expect:
+      - judge: "Clicking a valid login link should authenticate the user and redirect them into the app. FAIL if the page shows the generic message 'An error occurred while logging in. Please try again.' without explaining the cause. If the link genuinely cannot be used, the error must explain why (e.g., 'This login link has expired. Request a new one.') rather than a generic error."

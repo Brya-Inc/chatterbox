@@ -1,0 +1,23 @@
+name: "BRY-118: \"Event published\" box blocks back to home page button"
+description: |
+  Status: In Review — in_review
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Green "event published" notification overlays and blocks the "Back to site" button in the admin panel for at least 10 seconds.
+
+tags: [bug, in_review, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to the admin tab and open an unpublished event"
+    expect:
+      - judge: "Admin event editing interface should be accessible and display a publish action. State: FAIL if the admin interface does not load or the publish option is not visible."
+
+  - send: "Click the publish button to publish the event"
+    expect:
+      - judge: "A green notification confirming the event was published should appear. The 'Back to site' button should still be accessible and not obscured by the notification. State: FAIL if the green 'Event published' notification appears and overlaps or blocks the 'Back to site' button."
+
+  - send: "Immediately attempt to click the 'Back to site' button after the notification appears"
+    expect:
+      - judge: "The 'Back to site' button should be clickable and navigate away from the admin panel immediately after publishing. State: FAIL if the notification box covers the button and prevents clicking it for 10 or more seconds."

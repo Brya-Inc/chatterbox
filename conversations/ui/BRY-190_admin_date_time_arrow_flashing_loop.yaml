@@ -1,0 +1,27 @@
+name: "BRY-190: Admin page date & time arrow causes infinite flashing loop"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  On the admin page, clicking the sort arrow next to the "Date & Time" column header sends the screen into an endless white/black flashing loop that can only be escaped with the browser back button.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in as a Brya admin user and navigate to the admin page"
+    expect:
+      - judge: "The admin page should load with a table of events including a 'Date & Time' column header. FAIL if the admin page does not load or the Date & Time column is not present."
+
+  - send: "Hover over the 'Date & Time' column header so the sort arrow icon becomes visible"
+    expect:
+      - judge: "A sort arrow icon should appear next to the 'Date & Time' column header on hover. FAIL if no sort arrow icon is discoverable."
+
+  - send: "Click the sort arrow icon on the 'Date & Time' column header"
+    expect:
+      - judge: "The table should sort events by date & time (ascending or descending) in a single completed operation. FAIL if clicking the arrow causes the screen to repeatedly flash between white and black in an infinite loop."
+
+  - send: "Observe the page for 2-3 seconds after the click for any flashing or looping behavior"
+    expect:
+      - judge: "The page should be stable, showing a newly sorted event list. FAIL if the page continues flashing / cycling colors and the only escape is using the browser back button."

@@ -1,0 +1,18 @@
+name: "BRY-148: Logout from event page doesn't redirect — user stays on event page after logging out"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Logout completed but page did not redirect; user stayed on event detail page despite being signed out.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in and navigate to an event detail page (/event/<id>)."
+    expect:
+      - judge: "User is authenticated and on the event detail page. FAIL if navigation or login did not succeed."
+  - send: "Click the profile menu and select Logout."
+    expect:
+      - judge: "After logout, the user should be auto-redirected to the login page or homepage. FAIL if the page does not redirect and the user remains on the event detail page despite being logged out."

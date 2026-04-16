@@ -1,0 +1,27 @@
+name: "BRY-129: Loading more events inconsistently switches to 'scroll for more' and freezes"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Homepage infinite scroll sometimes switches from "loading more events" to "scroll for more" and freezes; workaround was to scroll to top and back or reload.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to the logged-in homepage so the events feed is visible"
+    expect:
+      - judge: "The homepage should render and display a list of events. FAIL if events do not load."
+
+  - send: "Scroll to the bottom of the events feed to trigger infinite scroll loading"
+    expect:
+      - judge: "A 'loading more events' indicator should appear and additional events should be fetched and appended. FAIL if the loading indicator is replaced by 'scroll for more' text that does not progress (freeze)."
+
+  - send: "Continue scrolling down through the feed repeatedly to reach further pages of events"
+    expect:
+      - judge: "Infinite scroll should consistently continue to load additional events each time the user reaches the bottom. FAIL if scrolling stops loading new events and gets stuck on 'scroll for more'."
+
+  - send: "Verify that the feed never freezes and does not require a reload or scroll-to-top workaround to continue"
+    expect:
+      - judge: "The user should be able to scroll continuously without having to reload or scroll back up to recover. FAIL if the feed freezes and recovery requires a reload or scroll-to-top-and-back workaround."

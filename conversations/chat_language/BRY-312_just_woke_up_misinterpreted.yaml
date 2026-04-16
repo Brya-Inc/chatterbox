@@ -1,0 +1,18 @@
+name: "BRY-312: [Assumption/Interpretation] Incorrectly interprets 'just woke up' as low energy"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  A neutral morning greeting ("just woke up") is incorrectly interpreted as low energy, prompting questions about stress and workload.
+
+tags: [bug, todo, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Hi good morning, just woke up"
+    expect:
+      - judge: "Response treats the message as a neutral morning greeting and does not infer low energy, fatigue, or emotional distress from it. FAIL if the chatbot responds with something like 'Looks like your energy is a bit low today' or asks about work or family stress without any signal of distress from the user."
+
+  - send: "I'm feeling great actually, just said good morning!"
+    expect:
+      - judge: "Response acknowledges the correction gracefully and does not continue to project low energy or stress onto the user. FAIL if the chatbot doubles down on the low-energy assumption or continues asking about stressors."

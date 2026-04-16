@@ -1,0 +1,14 @@
+name: "BRY-155: Chatbot response stuck on typing indicator until user sends new message"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Response must appear on its own without needing a second user message to unstick it.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What's happening this weekend?"
+    expect:
+      - judge: "Expected: Sage produces a visible, complete response within a reasonable time without requiring any additional user input to display it. FAIL if the test only saw a typing indicator with no final message, or if the response is empty/blank."

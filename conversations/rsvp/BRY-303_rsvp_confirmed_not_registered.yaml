@@ -1,0 +1,35 @@
+name: "BRY-303: Chatbot confirms RSVP but user not registered to event"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Chatbot confirms an RSVP was successful, but the user does not actually appear as registered — the event is missing from 'Your Attending' and the user is not listed as an attendee.
+
+tags: [bug, done, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events are available for me to RSVP to this week?"
+    expect:
+      - judge: "Bot should list currently available events. Today is {TODAY}. Home-page events: {EVENTS}. FAIL if the bot says no events are available when {EVENTS} shows some."
+
+  - send: "Please RSVP me to the first event you just listed."
+    expect:
+      - judge: "Bot should confirm a successful RSVP to that event. FAIL if the bot errors or refuses — the trap of BRY-303 is in the next turn."
+
+  - send: "Now check my attending list — is that event actually registered?"
+    expect:
+      - judge: |
+          Bot should confirm the event appears in the user's attending list. Current
+          attending: {MY_EVENTS}. FAIL if the bot confidently said 'RSVP confirmed' in
+          the previous turn but {MY_EVENTS} does NOT contain that event, OR if the bot
+          now says the user is not registered — a confirmed-but-not-registered mismatch
+          is the exact bug BRY-303.
+
+  - send: "If someone looks at the event's attendee list, will they see my name there?"
+    expect:
+      - judge: |
+          Bot should say yes (the user is an attendee) and that should match reality in
+          {MY_EVENTS}. FAIL if the bot says yes but {MY_EVENTS} doesn't contain the
+          event, or if the bot says no after previously confirming a successful RSVP —
+          BRY-303.

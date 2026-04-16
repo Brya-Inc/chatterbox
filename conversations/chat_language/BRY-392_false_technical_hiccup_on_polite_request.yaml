@@ -1,0 +1,17 @@
+name: "BRY-392: Chat falsely reports 'technical hiccup' when unable to parse polite event request — inconsistent behavior"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Polite phrasing must be understood; Sage must not falsely claim a technical hiccup for comprehension issues.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "If it's not too much trouble, could you possibly show me events please?"
+    expect:
+      - judge: "Expected: Sage understands the polite request and shows events (or asks a clarifying question about which events). FAIL if Sage responds with 'technical hiccup', 'small technical hiccup', 'try that again', or any similar fake-error message blaming a technical issue for what is actually a comprehension failure."
+  - send: "If it's not too much trouble, could you possibly show me events please?"
+    expect:
+      - judge: "Expected: Sage behaves consistently with the first attempt and again understands the polite request, showing events or asking for clarification. FAIL if the second attempt gives a materially different response (e.g. works now after failing before, or vice versa) or falsely reports a technical hiccup."

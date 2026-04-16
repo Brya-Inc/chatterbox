@@ -1,0 +1,27 @@
+name: "BRY-115: ShortId applied to wrong event"
+description: |
+  Status: In Review
+  When a user provides an invalid shortId to the chatbot, it should say the shortId
+  doesn't exist — not fuzzy-match it to a completely different event.
+
+tags: [bug, in_review, chatbot, event_edit]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to edit an event, the shortId is ZZZZZ"
+    expect:
+      - judge: "Bot should say it cannot find an event with the shortId 'ZZZZZ' or that the shortId is invalid. FAIL if the bot returns any event details or says something like 'You want to edit [event name]' — this means it matched the invalid shortId to a real event, which is the bug."
+
+  - send: "No that's not right, I gave you shortId ZZZZZ and you're showing me the wrong event"
+    expect:
+      - judge: "Bot acknowledges it cannot find the event with that shortId and does not insist on a wrong match. FAIL if it continues presenting a different event as a match."
+
+  - send: "Can you just confirm — does an event with shortId ZZZZZ exist?"
+    expect:
+      - judge: "Bot clearly and directly answers whether the shortId exists. FAIL if it says yes or presents any event — the shortId ZZZZZ is intentionally fake and should not match anything."
+
+  - send: "OK so how do I find the right shortId for my event?"
+    expect:
+      - judge: "Bot gives helpful guidance on how to find a valid shortId. FAIL if it suggests using or editing an event based on the invalid shortId from earlier in the conversation."

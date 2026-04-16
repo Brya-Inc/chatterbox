@@ -1,0 +1,18 @@
+name: "BRY-193: Chat asks for date instead of missing time when creating event"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user provides a name, date, and capacity but omits the time, the chatbot shows the date in the confirmation and then prompts with a date picker asking "When do you want to hold your event?" instead of asking for the missing time.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Book Club' on May 10th with a max of 12 people."
+    expect:
+      - judge: "Bot received a name ('Book Club'), date (May 10th), and capacity (12) but no time. Bot should ask specifically for the time — e.g. 'What time should this event start?' — and should present a time picker if available. FAIL if the bot asks 'When do you want to hold your event?' with a date picker despite the date already being provided, or asks for the date again instead of the missing time — this is the bug."
+
+  - send: "The date is May 10th, I already said that."
+    expect:
+      - judge: "Bot should acknowledge that it already has the date and now specifically ask for the time of day. FAIL if the bot continues to prompt for a date or shows a date picker when the user has already provided the date."

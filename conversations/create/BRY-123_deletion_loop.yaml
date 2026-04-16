@@ -1,0 +1,30 @@
+name: "BRY-123: Chatbot stuck in deletion loop - cannot delete user-created event despite confirmation"
+description: |
+  Status: In Review — status unclear — testing to determine if still active
+  After creating an event and asking the chatbot to delete it, the bot enters an endless loop of re-asking for confirmation, claiming it cannot find the event, or offering to cancel the RSVP instead. Deletion never completes.
+
+tags: [bug, in_review, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Can you create an event called 'Yoga with Ariana' for this Saturday at 10am with a capacity of 15?"
+    expect:
+      - judge: "Bot should begin the event creation flow and either confirm the event was created or ask for any missing required details. FAIL if the bot refuses or cannot start the creation flow."
+
+  - send: "Please go ahead and create it with those details."
+    expect:
+      - judge: "Bot should confirm the event 'Yoga with Ariana' has been created. FAIL if the bot errors out or fails to confirm creation."
+
+  - send: "Can you delete the 'Yoga with Ariana' event that I just created?"
+    expect:
+      - judge: "Bot should recognize the user created this event and initiate the deletion process with a single confirmation request. FAIL if the bot says it cannot find the event, questions whether the user created it, or offers to cancel an RSVP instead of deleting the event."
+
+  - send: "Yes, I confirm — please delete the 'Yoga with Ariana' event."
+    expect:
+      - judge: "Bot should confirm the event has been successfully deleted and not ask for confirmation again. FAIL if the bot asks for confirmation again, claims it cannot find the event, loops back to the same question, or offers RSVP cancellation instead of event deletion."
+
+  - send: "Did you delete it? Can you confirm the event is gone?"
+    expect:
+      - judge: "Bot should confirm deletion was completed and the event no longer exists. FAIL if the bot is still asking for confirmation, saying it cannot find the event, or stuck in any kind of loop."

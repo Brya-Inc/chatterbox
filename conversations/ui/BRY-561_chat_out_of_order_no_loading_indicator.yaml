@@ -1,0 +1,23 @@
+name: "BRY-561: Chat responds to messages out of order with no loading indicator between responses"
+description: |
+  Status: Backlog — backlog
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Sending a second message while the first is processing results in out-of-order responses with no typing indicator between them.
+
+tags: [bug, backlog, ui]
+
+setup:
+  fresh_chat: true
+
+turns:
+  - send: "Open the chat and send the message 'Hi'"
+    expect:
+      - judge: "A typing or loading indicator should appear immediately while the chat is processing the first message. State: FAIL if no indicator appears after sending."
+
+  - send: "While the chat is still loading a response to 'Hi', immediately send the message 'What events are coming up'"
+    expect:
+      - judge: "After the first response appears, a typing or loading indicator should be continuously visible while the second message is being processed, with no unexplained gap in visual feedback. State: FAIL if there is a gap with no typing indicator between the two responses, leaving the user without feedback that the second message is being processed."
+
+  - send: "Observe the order in which the chat responses appear"
+    expect:
+      - judge: "The chat should respond to 'Hi' first and then to 'What events are coming up' in the order they were sent, with clear loading indicators between each. State: FAIL if responses arrive out of order or if there is any period with no loading indicator while a response is pending."

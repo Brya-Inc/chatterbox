@@ -1,0 +1,26 @@
+name: "BRY-124: Cancelled event still appears in user's RSVP list without 'cancelled' indicator"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  After the chatbot confirms an event deletion/cancellation, the event continues to appear in 'Your Attending' with no cancellation indicator. The chatbot also conflates cancellation with deletion.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What's the difference between cancelling an event and deleting it?"
+    expect:
+      - judge: "Bot should clearly distinguish cancellation (event stays visible but marked cancelled, RSVPs notified) from deletion (event removed entirely). FAIL if the bot conflates the two or says they are the same — conflating cancel/delete is part of BRY-124."
+
+  - send: "I want to cancel one of my events — what would happen to the people who RSVPed?"
+    expect:
+      - judge: "Bot should explain that attendees will be notified the event is cancelled and that the event will be removed from their attending list (or shown with a clear CANCELLED indicator). FAIL if the bot says attendees will still see it as an active event in their attending list."
+
+  - send: "Please cancel my upcoming event. Here are my events: {MY_EVENTS}"
+    expect:
+      - judge: "Bot should guide the user through cancellation, confirm once, and execute. FAIL if the bot errors or refuses despite the user listing their events."
+
+  - send: "Now check my attending list — is the cancelled event still there?"
+    expect:
+      - judge: "Bot should confirm the cancelled event has been removed from the attending list, or that it is clearly marked CANCELLED. Current attending: {MY_EVENTS}. FAIL if the bot shows the cancelled event as an active/normal upcoming RSVP with no cancellation indicator — that is BRY-124."

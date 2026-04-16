@@ -1,0 +1,26 @@
+name: "BRY-151: Aggressive response from chat following same question multiple times"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  Repeating a question about a nonexistent event causes the chatbot's tone to become increasingly aggressive and dismissive.
+
+tags: [bug, backlog, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Is there a pottery class event this week?"
+    expect:
+      - judge: "Response is polite and helpful, either finding relevant events or clearly stating none were found."
+
+  - send: "Are you sure? I thought I saw a pottery class listed somewhere."
+    expect:
+      - judge: "Response maintains a patient, helpful tone while re-checking or clarifying. FAIL if the tone becomes dismissive or impatient."
+
+  - send: "Can you check again? Maybe it's listed under a different name."
+    expect:
+      - judge: "Response remains warm and constructive, perhaps suggesting alternative search terms or related events. FAIL if the chatbot addresses the user by first name in a confrontational way or becomes pushy about redirecting the conversation."
+
+  - send: "I really think there's a pottery class. One more check?"
+    expect:
+      - judge: "Response stays patient and does not use the user's first name in an aggressive or frustrated manner. FAIL if the chatbot's tone is dismissive, condescending, or uses the user's name as a rhetorical device to shut down the inquiry."

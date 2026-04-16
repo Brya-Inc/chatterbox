@@ -1,0 +1,18 @@
+name: "BRY-120: Incorrect response from chat"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  Asking about a specific named event by title is treated as casual conversation instead of a lookup query.
+
+tags: [bug, backlog, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Is there an event called kite flying?"
+    expect:
+      - judge: "Response treats the question as a lookup query and either confirms the event exists with details (and optionally offers to RSVP), or clearly states no event called 'kite flying' was found. FAIL if the response deflects with something like 'Kite flying sounds fun, what about it sounds good to you?' without first answering whether the event exists."
+
+  - send: "No, I'm not asking about the activity — I'm asking if there's an event on Brya with that name."
+    expect:
+      - judge: "Response acknowledges the user is asking about a specific named event and either finds it or confirms it does not exist. FAIL if the chatbot continues to treat the question as a casual interest prompt rather than an event search."

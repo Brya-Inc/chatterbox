@@ -1,0 +1,21 @@
+name: "BRY-150: Profile name displays as question mark after navigating from stuck event page (Bug #3)"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Profile display showed "?" instead of the logged-in user's name after the stuck-event-page + RSVP + home-icon workaround; user was authenticated but profile UI was broken.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log out from an event detail page, then log in as a new user so the session lands on the wrong (previous user's) event page per BRY-147."
+    expect:
+      - judge: "New user is authenticated but lands on the wrong event page. FAIL if setup could not be reproduced."
+  - send: "RSVP to the event to trigger a page refresh."
+    expect:
+      - judge: "RSVP completes and page refreshes. FAIL if RSVP action fails."
+  - send: "Click the home icon to navigate to the homepage."
+    expect:
+      - judge: "Profile area should display the logged-in user's name or profile picture. FAIL if the profile displays a '?' placeholder even though the user is authenticated (logout option still works)."

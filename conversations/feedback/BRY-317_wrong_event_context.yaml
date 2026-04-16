@@ -1,0 +1,54 @@
+name: "BRY-317: [Feedback Flow] Chat confuses events - references wrong event from earlier in conversation"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  After giving feedback on one past event and then saying "I want to host it again", the chat references a different event mentioned earlier in the conversation (e.g. a karaoke event) instead of the event the feedback was about.
+
+tags: [bug, todo, feedback]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I went to a karaoke night last month, it was really fun."
+    expect:
+      - judge: "Bot should acknowledge the user's comment about the karaoke night. No specific action required. FAIL only if the bot crashes or gives an error."
+
+  - send: "I want to give feedback on a different event — Harris, Prosacco and Waters."
+    expect:
+      - judge: |
+          Bot should shift context to the "Harris, Prosacco and Waters" event
+          and begin a feedback flow for that specific event.
+          FAIL if the bot references the karaoke event or any event other than
+          "Harris, Prosacco and Waters" at this point.
+
+  - send: "Overall it was a great event, I'd give it 4 out of 5 stars."
+    expect:
+      - judge: |
+          Bot should record positive feedback for "Harris, Prosacco and Waters"
+          and continue the feedback flow for that event. FAIL if the bot
+          references the karaoke event or any other event.
+
+  - send: "The organization was excellent and the venue was perfect."
+    expect:
+      - judge: |
+          Bot should continue collecting feedback specifically for the
+          "Harris, Prosacco and Waters" event. FAIL if the bot references a
+          different event or loses track of which event is being discussed.
+
+  - send: "I want to host it again."
+    expect:
+      - judge: |
+          The pronoun "it" refers to "Harris, Prosacco and Waters" — the event
+          that has been the subject of this entire feedback conversation.
+          Bot should respond about hosting or re-running "Harris, Prosacco
+          and Waters".
+          FAIL if the bot references the karaoke event or any other event
+          mentioned earlier in the conversation — this context confusion is
+          exactly the bug described in BRY-317.
+
+  - send: "No, I meant the event we've been talking about — Harris, Prosacco and Waters."
+    expect:
+      - judge: |
+          Bot should acknowledge the correction and respond about
+          "Harris, Prosacco and Waters". FAIL if the bot persists in
+          referencing the wrong event after the user's explicit correction.

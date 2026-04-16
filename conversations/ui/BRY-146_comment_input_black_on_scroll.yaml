@@ -1,0 +1,31 @@
+name: "BRY-146: Comment input box background turns black and hides text when scrolling down"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  On an event's Comments tab, typing text then scrolling down turns the comment input background black, hiding the typed text.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Click any event card to open the event detail page"
+    expect:
+      - judge: "The event detail page should open with visible tabs including a Comments tab. FAIL if the event detail page does not load."
+
+  - send: "Click the Comments tab on the event detail page"
+    expect:
+      - judge: "The Comments tab should be selected and show a text input for adding comments. FAIL if the Comments tab or input is not visible."
+
+  - send: "Click the comment text input and type a sentence of text"
+    expect:
+      - judge: "The typed text should appear clearly inside the input with the normal (light) background. FAIL if the typed text is not visible."
+
+  - send: "Scroll down the page while the comment input remains focused with typed text"
+    expect:
+      - judge: "While scrolling, the comment input may shrink but must keep consistent styling so that typed text remains visible against the input background. FAIL if the input background turns black and the typed text becomes invisible on scroll."
+
+  - send: "Scroll back up and inspect the comment input again"
+    expect:
+      - judge: "The comment input should have maintained consistent styling throughout; the text should still be visible. FAIL if the text was only visible again after scrolling back up (i.e. it was hidden while scrolled down)."

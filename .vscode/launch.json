@@ -28,9 +28,60 @@
       "env": {
         "HEADLESS": "0"
       }
+    },
+    {
+      "name": "Run chat language tests",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "args": ["conversations/chat_language", "--json", "out/report.json"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Run chat language tests (headed)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "args": ["conversations/chat_language", "--json", "out/report.json"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "HEADLESS": "0"
+      }
+    },
+    {
+      "name": "Run chat language tests (resume from N)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "args": ["conversations/chat_language", "--skip", "${input:skipCount}", "--json", "out/report.json"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "HEADLESS": "0"
+      }
+    },
+    {
+      "name": "Re-run tests 9-21 (fight_with_friend → might_be_interested)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_tests.py",
+      "args": ["conversations/chat_language", "--skip", "8", "--limit", "13", "--json", "out/report_9_21.json"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "HEADLESS": "0"
+      }
     }
   ],
   "inputs": [
+    {
+      "id": "skipCount",
+      "type": "promptString",
+      "description": "How many conversations to skip?",
+      "default": "9"
+    },
     {
       "id": "yamlFile",
       "type": "promptString",

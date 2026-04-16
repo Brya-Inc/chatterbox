@@ -1,0 +1,18 @@
+name: "BRY-361: Login modal doesn't trap focus — Tab cycles through background page first"
+description: |
+  Status: Done — previously fixed (closed as not reproducible; Base UI Dialog defaults to modal=true with FloatingFocusManager). Failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Verifies keyboard focus remains trapped within the login modal.
+
+tags: [bug, done, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open the login modal on the homepage."
+    expect:
+      - judge: "Login modal is visible and focus is inside the modal. FAIL if modal did not open."
+  - send: "Press Tab repeatedly (at least 10 times) and record which elements receive focus at each step."
+    expect:
+      - judge: "Focus should stay within the login modal and cycle through its focusable elements (inputs, buttons, close) only. FAIL if Tab cycles through background page elements outside the modal before returning."

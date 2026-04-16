@@ -26,6 +26,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("paths", nargs="*", type=Path, help="Conversation YAML files or directories")
     p.add_argument("--tag", action="append", default=[], help="Only run conversations with this tag (repeatable)")
     p.add_argument("--json", type=Path, default=None, help="Write a JSON report to this path")
+    p.add_argument("--skip", type=int, default=0, metavar="N", help="Skip the first N conversations")
+    p.add_argument("--limit", type=int, default=None, metavar="N", help="Stop after running N conversations")
+    p.add_argument(
+        "--browsers",
+        type=str,
+        default="",
+        metavar="SPEC",
+        help="Which browsers to run: 'primary' (default), 'secondary', 'all', or a comma list like 'chrome,firefox'",
+    )
     return p.parse_args()
 
 
@@ -35,8 +44,10 @@ def _collect_paths(paths: list[Path], root: Path) -> list[Path]:
     out: list[Path] = []
     for p in paths:
         if p.is_dir():
-            out.extend(sorted(p.rglob("*.yaml")))
+            out.extend(sorted(f for f in p.rglob("*.yaml") if f.name != "config.yaml"))
         elif p.suffix in (".yaml", ".yml"):
+            if p.name == "config.yaml":
+                continue
             out.append(p)
         else:
             print(f"ERROR: not a YAML file or directory: {p}", file=sys.stderr)
@@ -53,6 +64,9 @@ def _filter_tags(convs: list[Conversation], tags: list[str]) -> list[Conversatio
 
 def main() -> int:
     args = parse_args()
+    import os
+    if args.browsers:
+        os.environ["BROWSERS"] = args.browsers
     cfg = load_config()
 
     files = _collect_paths(args.paths, cfg.conversations_dir)
@@ -70,6 +84,16 @@ def main() -> int:
     if not conversations:
         print(f"No conversations match tag filter {args.tag}")
         return 2
+
+    if args.skip:
+        print(f"Skipping first {args.skip} conversation(s)")
+        conversations = conversations[args.skip:]
+        if not conversations:
+            print("Nothing left to run after skipping.")
+            return 0
+
+    if args.limit is not None:
+        conversations = conversations[:args.limit]
 
     print(f"Target : {cfg.base_url}")
     print(f"Loaded : {len(conversations)} conversation(s)")
@@ -91,5 +115,12 @@ if __name__ == "__main__":
     # Skip sys.exit when a debugger is attached so the IDE doesn't surface
     # SystemExit as an uncaught exception. CLI/CI runs still get a real
     # non-zero exit code.
-    if sys.gettrace() is None:
+    # sys.gettrace() alone misses VS Code (debugpy) and PyCharm (pydevd),
+    # which don't always install a trace function.
+    in_debugger = (
+        sys.gettrace() is not None
+        or "pydevd" in sys.modules   # PyCharm / PyDev
+        or "debugpy" in sys.modules  # VS Code
+    )
+    if not in_debugger:
         sys.exit(code)

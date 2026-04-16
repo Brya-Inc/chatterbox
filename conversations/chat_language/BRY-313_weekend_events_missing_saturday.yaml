@@ -1,0 +1,23 @@
+name: "BRY-313: [Event Discovery] Chat doesn't return all weekend events when asked"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  Asking about weekend events returns only Sunday results, omitting Saturday events.
+
+tags: [bug, todo, chat_language]
+
+setup:
+  admin_clear: true
+  require_events: true
+
+turns:
+  - send: "What's happening this weekend?"
+    expect:
+      - judge: "Response includes events from both Saturday and Sunday of the current weekend, not just Sunday. FAIL if only Sunday events are listed and Saturday events that exist on the platform are omitted."
+
+  - send: "Are there any events on Saturday specifically?"
+    expect:
+      - judge: "Response lists Saturday events if any exist. FAIL if the chatbot says there are no Saturday events when Saturday events are available on the platform."
+
+  - send: "Can you show me everything happening from Saturday through Sunday?"
+    expect:
+      - judge: "Response presents a complete picture of the weekend, covering both Saturday and Sunday. FAIL if Saturday events continue to be absent from the results."

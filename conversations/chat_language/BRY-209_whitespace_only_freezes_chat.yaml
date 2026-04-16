@@ -1,0 +1,17 @@
+name: "BRY-209: Chat freezes on loading indicator when sending only spaces"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Whitespace-only input must not freeze chat; system should block, prompt, or ignore it.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "     "
+    expect:
+      - judge: "Expected: Either the whitespace-only message is blocked/ignored (no hang), or Sage responds quickly with a prompt like 'Please enter a message' or asks what the user needs. FAIL if the chat is visibly stuck on a loading indicator with no response ever produced."
+  - send: "Hi, can you help me find events this weekend?"
+    expect:
+      - judge: "Expected: Sage responds normally to this follow-up message about weekend events — chat is not stuck from the earlier whitespace input. FAIL if Sage fails to respond, or the response is empty/stuck."

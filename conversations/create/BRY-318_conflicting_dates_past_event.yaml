@@ -1,0 +1,33 @@
+name: "BRY-318: Chat gives conflicting dates for past event across users — says 'today' vs 'tomorrow' for already-passed event"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  An event that has already passed is reported as 'today' to one user and 'tomorrow' to another, when it should be reported consistently as already passed.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events are happening today?"
+    expect:
+      - judge: |
+          Bot should list today's events accurately. Today is {TODAY}. Current home-page
+          events: {EVENTS}. FAIL if the bot describes an event that has already ended/passed
+          earlier today as if it is still upcoming today — mislabeling a past event as
+          "today (upcoming)" is part of BRY-318.
+
+  - send: "Is there a book club with Simone happening? When is it?"
+    expect:
+      - judge: |
+          Bot should give a date/time answer consistent with reality. Today is {TODAY}.
+          FAIL if the bot says a clearly past event is happening "tomorrow" or shifts the
+          date forward — reporting the wrong future date for a past event is BRY-318.
+
+  - send: "To be clear: has the Simone book club already happened, or is it still upcoming?"
+    expect:
+      - judge: "Bot should give a clear, consistent answer. FAIL if the bot's answer here contradicts its answer in the previous turn — inconsistency between answers is BRY-318."
+
+  - send: "Just to confirm once more — if the book club was at 12 AM earlier today, is that past or future?"
+    expect:
+      - judge: "Bot should clearly identify a 12 AM earlier-today event as in the past. FAIL if the bot says 12 AM today is still upcoming, or calls it 'tomorrow' — BRY-318 is the bug where past events are mislabeled."

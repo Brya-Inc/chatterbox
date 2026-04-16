@@ -17,22 +17,35 @@ def _c(text: str, code: str) -> str:
     return f"\033[{code}m{text}\033[0m"
 
 
+def _label(r: ConversationResult) -> str:
+    parts = [r.conversation.name]
+    meta = []
+    if r.user_email:
+        meta.append(r.user_email)
+    if r.browser:
+        meta.append(r.browser)
+    if meta:
+        parts.append(f"({', '.join(meta)})")
+    return " ".join(parts)
+
+
 def print_summary(results: list[ConversationResult]) -> int:
     print(f"\n{'=' * 60}\nSUMMARY\n{'=' * 60}")
     total, passed = 0, 0
-    failed_names: list[str] = []
-    skipped_names: list[str] = []
+    failed_labels: list[str] = []
+    skipped_labels: list[str] = []
 
     for r in results:
+        label = _label(r)
         if r.skipped_reason:
-            skipped_names.append(r.conversation.name)
-            print(f"  {_c('SKIP', '33')}  {r.conversation.name} — {r.skipped_reason}")
+            skipped_labels.append(label)
+            print(f"  {_c('SKIP', '33')}  {label} — {r.skipped_reason}")
             continue
 
         tag = _c("PASS", "32") if r.passed else _c("FAIL", "31")
-        print(f"  {tag}  {r.conversation.name}")
+        print(f"  {tag}  {label}")
         if not r.passed:
-            failed_names.append(r.conversation.name)
+            failed_labels.append(label)
 
         for t in r.turns:
             if t.error:
@@ -53,11 +66,11 @@ def print_summary(results: list[ConversationResult]) -> int:
             else:
                 print(f"     final {r.final_check.type}: {r.final_check.detail[:160]}")
 
-    ran = len(results) - len(skipped_names)
-    ok = ran - len(failed_names)
+    ran = len(results) - len(skipped_labels)
+    ok = ran - len(failed_labels)
     print(f"\nChecks : {passed}/{total} passed")
-    print(f"Tests  : {ok}/{ran} passed ({len(skipped_names)} skipped)")
-    return 0 if not failed_names and not skipped_names else 1
+    print(f"Runs   : {ok}/{ran} passed ({len(skipped_labels)} skipped)")
+    return 0 if not failed_labels and not skipped_labels else 1
 
 
 def write_json(results: list[ConversationResult], path: Path) -> None:
@@ -68,6 +81,8 @@ def write_json(results: list[ConversationResult], path: Path) -> None:
                 "name": r.conversation.name,
                 "path": str(r.conversation.path),
                 "tags": r.conversation.tags,
+                "user_email": r.user_email,
+                "browser": r.browser,
                 "passed": r.passed,
                 "skipped_reason": r.skipped_reason,
                 "turns": [

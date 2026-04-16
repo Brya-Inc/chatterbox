@@ -1,0 +1,27 @@
+name: "BRY-112: Swipe gesture causes overlapping pages display"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Swipe-left gesture out of chatbot causes current page to overlap on top of previous page instead of cleanly navigating back.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to homepage and open the chatbot"
+    expect:
+      - judge: "The chatbot conversation view should open successfully on top of / replacing the homepage. FAIL if the chatbot does not open."
+
+  - send: "Send any message to the chatbot so it is in an active conversation state"
+    expect:
+      - judge: "The chatbot should display the sent message and respond, confirming an active conversation state. FAIL if the chat is empty or unresponsive."
+
+  - send: "Perform a swipe-left mouse gesture (browser back shortcut) from inside the chatbot conversation view"
+    expect:
+      - judge: "The browser should cleanly navigate from the chatbot back to the previous page with no visual overlap between the two pages. FAIL if the current (chatbot) page visibly overlaps on top of the previous page during or after the swipe-back gesture."
+
+  - send: "Inspect the resulting page for layered/overlapping DOM or visual artifacts"
+    expect:
+      - judge: "Only the previous page should be visible — the chatbot page should be fully unmounted or transitioned away. FAIL if elements from the chatbot page remain rendered on top of the previous page."

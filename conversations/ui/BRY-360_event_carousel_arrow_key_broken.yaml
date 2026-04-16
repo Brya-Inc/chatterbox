@@ -1,0 +1,24 @@
+name: "BRY-360: Event carousel arrow key navigation broken — doesn't move between cards when focused"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  Arrow keys on focused carousel cards should navigate between cards, not scroll the page.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Browser: open chat and ask Sage a question that triggers an event carousel response (SuggestedEventsScroller)."
+    expect:
+      - judge: "Carousel response is rendered with multiple event cards. FAIL if no carousel appears."
+  - send: "Browser: press Tab until focus lands on an event card inside the carousel."
+    expect:
+      - judge: "An event card receives visible focus indicator. FAIL if Tab cannot reach the cards, or focus ring is absent."
+  - send: "Browser: press ArrowRight on the focused card."
+    expect:
+      - judge: "Focus moves to the next event card in the carousel without scrolling the page. FAIL if ArrowRight scrolls the page instead of moving between cards (original bug)."
+  - send: "Browser: press ArrowLeft on the focused card."
+    expect:
+      - judge: "Focus moves to the previous event card. FAIL if ArrowLeft scrolls page or does nothing."

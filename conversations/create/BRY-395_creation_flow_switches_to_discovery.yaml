@@ -1,0 +1,22 @@
+name: "BRY-395: Chat confuses event creation with event discovery and shows existing event"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  While in the event creation flow, the user provides a date and the chatbot switches context — showing an existing event and offering an RSVP instead of continuing event creation.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event."
+    expect:
+      - judge: "Bot should acknowledge the user wants to create an event and begin collecting creation details. FAIL if the bot shows existing events or offers RSVPs."
+
+  - send: "Sunday March 21st"
+    expect:
+      - judge: "Bot should treat this as the proposed date for the new event being created, and continue the creation flow by asking for the next required field (e.g., event name or time). FAIL if the bot displays an existing event (such as a 'Boxing Match') and offers to RSVP the user — this means the bot has abandoned the creation flow and switched to event discovery, which is the bug."
+
+  - send: "No, I don't want to RSVP to anything. I want to CREATE a new event on that date."
+    expect:
+      - judge: "Bot should re-enter the creation flow and ask for remaining event details for a new event on March 21st. FAIL if the bot continues showing existing events or keeps offering RSVPs."

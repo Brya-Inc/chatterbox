@@ -1,0 +1,18 @@
+name: "BRY-342: [Event Creation] Chat duplicates response during event creation"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user initiates event creation, the chatbot repeats its entire response verbatim twice in a row. This occurs consistently at the start of the event creation flow.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I'd like to create a new event."
+    expect:
+      - judge: "Bot should respond exactly once with a single, non-repeated message asking for event details. FAIL if the bot's response contains the same paragraph or sentence block repeated twice verbatim — this is the bug."
+
+  - send: "The event is called 'Community Garden Day' on May 15th at 10am."
+    expect:
+      - judge: "Bot should respond once with acknowledgment or follow-up questions. FAIL if the bot duplicates any portion of its response — repeating the same text twice in one message."

@@ -1,5 +1,10 @@
 {
   "mcpServers": {
+    "linear": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "linear-mcp-server"]
+    },
     "playwright": {
       "type": "stdio",
       "command": "/opt/homebrew/bin/node",

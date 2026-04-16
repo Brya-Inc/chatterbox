@@ -1,0 +1,24 @@
+name: "BRY-370: Focus indicators inconsistent and invisible on some elements"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  All focus indicators should be consistent in thickness/offset and meet 3:1 contrast minimum.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Browser: load home page and Tab from top to bottom, recording focus indicator style (color, thickness) on every focusable element."
+    expect:
+      - judge: "All focusable elements receive a visible focus indicator. FAIL if any element has no visible focus ring."
+  - send: "Browser: verify focus indicators are consistent across elements (similar thickness, offset, color)."
+    expect:
+      - judge: "Focus indicators are consistent — not a mix of thick black outline on some, thin blue on profile, nothing on 'Share anything' input (original bug). FAIL if styles vary significantly between elements."
+  - send: "Browser: specifically check the 'Share anything' input and the orange accessibility bubble."
+    expect:
+      - judge: "'Share anything' input shows a visible focus outline, and accessibility bubble focus ring is visible against its background (meets 3:1 contrast). FAIL if Share-anything has no ring, or accessibility bubble shows black-on-black invisible outline (original bug)."
+  - send: "Browser: verify focus-ring contrast meets WCAG 3:1 minimum on all sampled elements."
+    expect:
+      - judge: "Every focus indicator meets 3:1 contrast against its background. FAIL if any indicator is invisible or low-contrast."

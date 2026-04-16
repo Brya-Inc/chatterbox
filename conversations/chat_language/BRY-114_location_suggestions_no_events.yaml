@@ -1,0 +1,22 @@
+name: "BRY-114: Chat prompts recommend locations that have no events"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  Chat suggests cities in prompt buttons (e.g. Chicago, LA, Miami) that have no events on the platform.
+
+tags: [bug, backlog, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Which cities have events right now?"
+    expect:
+      - judge: "Response lists or discusses cities. FAIL if the response or any suggested prompt buttons include cities like Chicago, Los Angeles, or Miami that have no events on the Brya platform."
+
+  - send: "What about Chicago? Any events there?"
+    expect:
+      - judge: "Response either confirms events exist in Chicago or honestly says no events are available there. FAIL if response suggests or displays prompt buttons for Chicago despite no events existing in that city."
+
+  - send: "How about Los Angeles or Miami?"
+    expect:
+      - judge: "Response either confirms events in Los Angeles or Miami or clearly states none are available. FAIL if the chat presents prompt buttons for Los Angeles or Miami when no events exist in those cities on the platform."

@@ -1,0 +1,23 @@
+name: "BRY-315: Homepage flashes briefly during onboarding email click-through"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  When a new user clicks the verification link in the onboarding email, the homepage flashes for ~1 second before redirecting to the signup page.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Start the onboarding flow from the landing page and enter a new email address"
+    expect:
+      - judge: "The onboarding flow should accept the email and indicate that a verification email has been sent. FAIL if the onboarding form rejects a valid email or fails to trigger an email."
+
+  - send: "Open the resulting verification email and click the 'Click to get started' link"
+    expect:
+      - judge: "The browser should navigate from the email link directly to the signup page with no intermediate flash of the logged-in homepage. FAIL if the homepage is briefly rendered for around 1 second before the redirect to the signup page occurs."
+
+  - send: "Observe the transition closely and confirm no homepage content appears before the signup page loads"
+    expect:
+      - judge: "The user should perceive a clean single navigation into the signup page. FAIL if the homepage flashes visibly before being replaced by the signup page."

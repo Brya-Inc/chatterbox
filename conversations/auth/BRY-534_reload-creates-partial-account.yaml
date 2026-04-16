@@ -1,0 +1,33 @@
+name: "BRY-534: Reloading from login page logs user into partial \"?\" account with deleted email and inconsistent permissions"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  After a deleted account requests a magic link and clicks it without completing signup, reloading the page
+  creates a partial session with "?" as profile name, the deleted email still present, blank name fields,
+  broken permissions (can create events, cannot RSVP), and a ghost record visible in the Admin panel.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Permanently delete a test account via Admin panel and confirm deletion is complete"
+    expect:
+      - judge: "The account should be fully deleted and no longer accessible. FAIL if deletion fails or the account remains active."
+
+  - send: "Navigate to /login, enter the deleted account's email, and request a magic link"
+    expect:
+      - judge: "The platform should either reject the deleted email with a clear error or send a magic link. No partial account should be created at this step."
+
+  - send: "Click the magic link in the email but do NOT complete the signup flow — stop partway through and reload the page"
+    expect:
+      - judge: "Reloading without completing signup should leave the user in a fully logged-out state with no session created. FAIL if reloading the page results in a logged-in state showing '?' as the profile name, the deleted email address in Account Settings, or blank name fields."
+
+  - send: "If a partial session was created, attempt to RSVP to an event"
+    expect:
+      - judge: "If a session exists at all it must have consistent permissions. FAIL if the partial '?' account can create events but cannot RSVP, indicating broken and inconsistent permission state."
+
+  - send: "Check the Admin panel for the deleted email address"
+    expect:
+      - judge: "The deleted email should not appear in the Admin panel. FAIL if a ghost account record for the deleted email still exists in the Admin panel despite the account having been permanently deleted."

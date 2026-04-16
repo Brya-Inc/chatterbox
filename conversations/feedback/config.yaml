@@ -1,0 +1,23 @@
+# Multi-user execution rules for this directory.
+# Every test in this directory runs once per user in `users.always`,
+# plus once with the next user from `users.rotate` (strict alternating by test index).
+
+users:
+  always:
+    - email: mike@brya.com
+  rotate:
+    - email: mikekutliroff.is13@gmail.com
+    - email: ariannalmark@gmail.com
+
+rotation: alternating          # strict A, B, A, B across tests in this directory
+failure_handling: run_all      # run all user variants regardless of failures
+
+# Browsers to run this directory's tests against.
+# CLI --browsers primary|secondary|all|<csv> overrides this at runtime.
+browsers:
+  primary:
+    - chrome
+    - safari
+  secondary:
+    - firefox
+    - edge

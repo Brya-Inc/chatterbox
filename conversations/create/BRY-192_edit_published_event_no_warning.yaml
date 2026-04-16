@@ -1,0 +1,26 @@
+name: "BRY-192: Chat allows editing of published events without restrictions"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  After an event is created and published, the chatbot allows edits to the event immediately with no warning about impact on existing attendees or data integrity.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Sunset Yoga' for May 1st at 6pm with a capacity of 25."
+    expect:
+      - judge: "Bot should start or complete the event creation flow. FAIL if the bot refuses or errors."
+
+  - send: "Yes, publish it."
+    expect:
+      - judge: "Bot should confirm the event 'Sunset Yoga' has been created and published. FAIL if the event cannot be published."
+
+  - send: "Actually, can you change the name of 'Sunset Yoga' to 'Sunrise Yoga'?"
+    expect:
+      - judge: "Bot should warn the user that the event is already published and that editing it may impact existing attendees, or indicate that admin approval is required for changes to a published event. FAIL if the bot immediately applies the edit to the published event with no warning or restriction — this is the bug."
+
+  - send: "And also change the date to May 8th instead."
+    expect:
+      - judge: "Bot should warn about the impact of changing the date on existing attendees, or block the change pending review. FAIL if the bot changes the date of a published event without any warning about attendees — this is the bug."

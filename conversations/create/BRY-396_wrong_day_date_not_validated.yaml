@@ -1,0 +1,22 @@
+name: "BRY-396: Chat doesn't validate incorrect day-date combination and creates event with wrong information"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  When a user provides an incorrect day-date pair (e.g., "Sunday March 21st" when March 21, 2026 is actually a Saturday), the chatbot never corrects the error. The confirmation text says "Sunday, March 21st" but the event card displays "Sat, Mar 21" — conflicting information shown to the user.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Brunch Gathering' on Sunday March 21st at 11am."
+    expect:
+      - judge: "March 21, 2026 is a Saturday, not a Sunday. Bot should validate the day-date combination and inform the user of the discrepancy — e.g., 'March 21st is actually a Saturday, not a Sunday. Would you like Saturday March 21st, or Sunday March 22nd?' FAIL if the bot accepts 'Sunday March 21st' without any correction or validation — this is the bug."
+
+  - send: "Are you sure about the day? I said Sunday March 21st."
+    expect:
+      - judge: "Bot should confirm that March 21, 2026 is a Saturday and clarify the discrepancy to the user, offering to use the correct day (Saturday March 21) or the correct Sunday (March 22). FAIL if the bot confirms 'Sunday March 21st' without flagging that the day and date do not match."
+
+  - send: "Let's just go with Saturday March 21st then."
+    expect:
+      - judge: "Bot should confirm the event is scheduled for Saturday, March 21st and all confirmation text and event details should consistently say Saturday — not Sunday. FAIL if any part of the bot's response still refers to Sunday when the user has confirmed Saturday."

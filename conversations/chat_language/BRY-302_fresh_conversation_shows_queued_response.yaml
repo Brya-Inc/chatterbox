@@ -1,0 +1,17 @@
+name: "BRY-302: Fresh conversation shows previous unanswered response if restarted during loading"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Start Fresh Conversation must clear all history, including any queued in-flight response.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Tell me everything you know about upcoming events in detail please."
+    expect:
+      - judge: "Expected: Sage starts responding about upcoming events. FAIL if there is no response at all."
+  - send: "Actually never mind — starting fresh. What's poppin this weekend?"
+    expect:
+      - judge: "Expected: Sage responds only to the current 'what's poppin this weekend' question. FAIL if the response injects or prepends content from the earlier 'upcoming events in detail' query as a leftover queued response."

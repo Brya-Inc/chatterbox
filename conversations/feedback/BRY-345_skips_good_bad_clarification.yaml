@@ -1,0 +1,53 @@
+name: "BRY-345: [Feedback Flow] Chat skips good/bad clarification after prompt selection"
+description: |
+  Status: In Progress — currently being worked on, failure is expected
+  After the user selects a prompt option (e.g. "The location") when asked "What stood out to you—good or bad?", the chat skips asking whether that aspect was positive or negative and jumps to the next question.
+
+tags: [bug, in_progress, feedback]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I'd like to give feedback on an event I attended."
+    expect:
+      - judge: "Bot should begin the feedback flow by asking which past attended event the user wants to give feedback on. FAIL if the bot refuses or cannot start the feedback process."
+
+  - send: "The most recent event I attended."
+    expect:
+      - judge: "Bot should identify the most recent attended event from {MY_EVENTS} and confirm it with the user, then continue the feedback flow. FAIL if the bot cannot identify a past event or errors out."
+
+  - send: "Yes, that's the one."
+    expect:
+      - judge: "Bot should proceed with the feedback flow, asking for an overall impression or rating. FAIL if the bot stalls or abandons the feedback process."
+
+  - send: "It was pretty good overall."
+    expect:
+      - judge: "Bot should acknowledge the positive sentiment and continue with the feedback flow, progressing toward asking what stood out. FAIL if it stops the flow or gives an error."
+
+  - send: "The location"
+    expect:
+      - judge: |
+          The user has selected "The location" as what stood out when asked
+          "What stood out to you—good or bad?". The bot MUST now ask whether
+          the location was a positive or negative aspect before moving on.
+          FAIL if the bot immediately proceeds to the next feedback question
+          without asking "Was that a positive or negative?" or equivalent
+          clarification — this is the bug described in BRY-345.
+
+  - send: "You didn't ask me if the location was good or bad."
+    expect:
+      - judge: |
+          Bot should acknowledge the skipped step and ask whether the location
+          stood out as a positive or negative experience before continuing.
+          FAIL if the bot dismisses the complaint, says it already captured
+          the sentiment, or moves on without asking for the good/bad
+          clarification.
+
+  - send: "It was actually a negative — the location was too far away."
+    expect:
+      - judge: |
+          Bot should record the negative sentiment about the location and
+          continue the feedback flow. FAIL if the bot ignores the sentiment,
+          treats it as positive, or fails to incorporate it into the feedback
+          being collected.

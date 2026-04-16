@@ -1,0 +1,23 @@
+name: "BRY-608: Chat returns wrong day and date when asked about Saturday events"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  Chat responds with a carousel of events on the wrong date while labelling them as "this Saturday" using the previous Saturday's date.
+
+tags: [bug, backlog, chat_language]
+
+setup:
+  admin_clear: true
+  require_events: true
+
+turns:
+  - send: "What events are happening Saturday?"
+    expect:
+      - judge: "Response references the upcoming Saturday with the correct date (not the previous Saturday). Today is {TODAY}, so the upcoming Saturday should be calculated from that. FAIL if the chatbot labels events as happening on 'Saturday' but displays a date that is in the past or is a different day of the week (e.g., a Wednesday), as occurred when the chat showed April 15th events labelled as 'Saturday, April 11'."
+
+  - send: "Are those events actually on a Saturday? Can you confirm the date?"
+    expect:
+      - judge: "Response confirms the date of the listed events and verifies they fall on a Saturday. FAIL if the chatbot either confirms an incorrect date or returns events that are not on a Saturday while still calling them Saturday events."
+
+  - send: "Just to be clear, I want events this coming Saturday, not last Saturday."
+    expect:
+      - judge: "Response clarifies or re-fetches events for the upcoming Saturday with the correct date. FAIL if the chatbot returns events from the previous Saturday or continues to show non-Saturday dates labelled as Saturday."

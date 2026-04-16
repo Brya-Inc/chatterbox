@@ -1,0 +1,20 @@
+name: "BRY-214: Rapid-fire messages cause typing indicator to freeze and persist incorrectly"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  All rapid-fire messages must receive responses; typing indicator must not get stuck.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Show me events this weekend."
+  - send: "What about next weekend?"
+  - send: "Any free events coming up?"
+  - send: "What about events near me?"
+    expect:
+      - judge: "Expected: Sage has responded to this message (the most recent in a rapid-fire burst) with a real answer about nearby events, not a perpetual typing indicator. FAIL if the final turn's response is empty, blank, or only shows a stuck loading state."
+  - send: "Thanks — just to confirm, did you answer all four of my questions?"
+    expect:
+      - judge: "Expected: Sage's prior responses in the transcript addressed each of the four earlier questions (this weekend, next weekend, free events, nearby events) and none were silently dropped. FAIL if any of the four earlier questions appears to have received no substantive response."

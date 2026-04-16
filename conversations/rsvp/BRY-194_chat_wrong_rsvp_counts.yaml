@@ -1,0 +1,37 @@
+name: "BRY-194: Chat does not register RSVPs to event"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Chatbot reports incorrect RSVP counts — an event with 3 attendees is reported as having no attendees, while another event with 1 attendee is reported correctly.
+
+tags: [bug, done, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What events am I hosting or attending? Please list them."
+    expect:
+      - judge: "Bot should list the user's events accurately. Current RSVP'd events: {MY_EVENTS}. FAIL if the bot says there are no events when {MY_EVENTS} shows some, or lists phantom events not in {MY_EVENTS}."
+
+  - send: "How many people are registered for my upcoming event?"
+    expect:
+      - judge: |
+          Bot should give an attendee count for the event. FAIL if the bot says 'no
+          attendees signed up' or '0 people' in a way that contradicts the actual
+          platform data — incorrect zero/low counts despite real RSVPs is the core
+          symptom of BRY-194.
+
+  - send: "Are you sure? Please double-check the attendee count for that event."
+    expect:
+      - judge: |
+          Bot should either confirm its earlier count with justification or correct
+          itself. FAIL if the bot simply reasserts 'no attendees' without actually
+          rechecking — BRY-194 is the bug where chat-reported RSVP counts do not match
+          the platform's true counts.
+
+  - send: "List the names of people attending my event."
+    expect:
+      - judge: |
+          Bot should either list attendees or explain privacy restrictions. FAIL if the
+          bot says there are zero attendees in a way that contradicts the event actually
+          having registrants — BRY-194.

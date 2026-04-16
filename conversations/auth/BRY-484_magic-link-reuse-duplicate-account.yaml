@@ -1,0 +1,28 @@
+name: "BRY-484: Magic links can be reused to create duplicate accounts and permanently break authentication for that email"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  Magic links are not single-use; clicking the same link twice in separate tabs creates two accounts with the same email,
+  and all future magic links for that email permanently redirect to a "Create Password" page.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Navigate to /login, enter a test email, and request a magic link"
+    expect:
+      - judge: "The platform should send exactly one magic link email to the address. FAIL if the request fails or no confirmation is shown."
+
+  - send: "Open the magic link in Tab 1 and begin the signup flow without completing it"
+    expect:
+      - judge: "The magic link should be accepted for a single use in Tab 1. FAIL if the link is immediately rejected or invalidated before completion."
+
+  - send: "Open the same magic link URL again in Tab 2 and attempt to complete a second signup"
+    expect:
+      - judge: "The already-used magic link should be rejected in Tab 2 with an appropriate error such as 'link already used' or 'link expired'. FAIL if Tab 2 accepts the link and allows a second signup to proceed, creating a duplicate account."
+
+  - send: "Log out and request a new magic link for the same email, then click the new link"
+    expect:
+      - judge: "A newly issued magic link should proceed to a normal login or password page, not a 'Create Password' page. FAIL if all future magic links for the email permanently redirect to a 'Create Password' page."

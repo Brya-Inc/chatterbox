@@ -1,0 +1,37 @@
+name: "BRY-145: Cannot un-RSVP from cancelled event — stuck in attending list permanently"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  When a user tries to cancel their RSVP to an event that the creator already cancelled, the chatbot claims it cannot find the event (even though the user is still shown as attending).
+
+tags: [bug, done, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Show me the events I'm RSVP'd to right now."
+    expect:
+      - judge: "Bot should list the user's RSVPs. Current RSVPs: {MY_EVENTS}. FAIL if the bot says the user has no RSVPs when {MY_EVENTS} shows some."
+
+  - send: "One of those events was cancelled by the organizer — please remove my RSVP so it stops showing in my attending list."
+    expect:
+      - judge: |
+          Bot should successfully un-RSVP the user from the cancelled event (or explain
+          that cancelled events are auto-cleared). FAIL if the bot says it 'had trouble
+          finding' the event, or claims the event does not exist, even though the user
+          is still shown as attending it — that inconsistency is BRY-145.
+
+  - send: "You said earlier I was RSVP'd to it, so why can't you cancel my RSVP?"
+    expect:
+      - judge: |
+          Bot should resolve the contradiction — either successfully cancel the RSVP
+          now, or clearly explain the workflow for removing RSVPs from cancelled events.
+          FAIL if the bot insists it cannot find the event while also having
+          acknowledged the RSVP moments ago — self-contradiction on cancelled events is BRY-145.
+
+  - send: "Confirm that the cancelled event is no longer in my attending list."
+    expect:
+      - judge: |
+          Bot should confirm the cancelled event is no longer in the attending list.
+          Current attending: {MY_EVENTS}. FAIL if the cancelled event is still listed
+          and the bot cannot remove it — stuck-in-attending-list is the core symptom of BRY-145.

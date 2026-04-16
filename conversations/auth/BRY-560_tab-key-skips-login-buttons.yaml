@@ -1,0 +1,24 @@
+name: "BRY-560: Tab key skips X, Continue, Back, and Login buttons on login page"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  On /login in Safari on Mac, pressing Tab skips the X (close), Continue, Back, and Login buttons entirely,
+  making them unreachable via keyboard and failing basic accessibility requirements.
+  Note: requires UI automation — steps describe browser actions, not chat messages.
+
+tags: [bug, backlog, auth]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open /login in Safari on Mac and focus the browser window"
+    expect:
+      - judge: "The login page should load and be ready for keyboard interaction. FAIL if the page does not load."
+
+  - send: "Press Tab repeatedly from the top of the /login page to cycle through all focusable elements and note which buttons receive focus"
+    expect:
+      - judge: "All interactive elements — including the X (close) button, the Continue button, the Back button, and the Login button — should each receive keyboard focus as Tab is pressed. FAIL if Tab key skips the X button, Continue button, Back button, or Login button, leaving any of these controls unreachable via keyboard navigation."
+
+  - send: "Navigate to the magic link confirmation page and press Tab to cycle through its interactive elements"
+    expect:
+      - judge: "All buttons on the magic link confirmation page should also be reachable via the Tab key. FAIL if any button on that page is skipped during Tab navigation."

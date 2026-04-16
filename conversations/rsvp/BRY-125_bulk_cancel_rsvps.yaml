@@ -1,0 +1,42 @@
+name: "BRY-125: Chatbot cannot cancel RSVPs in bulk"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  When asked to cancel all RSVPs, the chatbot lists the events, confirms, then contradicts itself by claiming it cannot locate them. Ends in an infinite loop with no cancellations executed.
+
+tags: [bug, done, rsvp]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Cancel all my RSVPs."
+    expect:
+      - judge: |
+          Bot should list the user's current RSVPs and ask for a single confirmation
+          before cancelling in bulk. Current RSVPs: {MY_EVENTS}. FAIL if the bot says
+          it has no record of the user's RSVPs when {MY_EVENTS} clearly shows some —
+          contradicting its own knowledge of the RSVPs is part of BRY-125.
+
+  - send: "Yes, cancel all of them."
+    expect:
+      - judge: |
+          Bot should proceed to cancel all RSVPs it just listed and confirm completion.
+          FAIL if the bot now says it cannot locate the events it just listed in the
+          previous turn — that self-contradiction ('I see your RSVPs' then 'I can't find
+          them') is BRY-125.
+
+  - send: "You just listed my RSVPs a moment ago — please cancel those exact ones."
+    expect:
+      - judge: |
+          Bot should execute the cancellations without asking for event names/dates again.
+          FAIL if the bot asks the user to re-provide the names and dates of events it just
+          listed, or continues to claim it cannot find them — asking the user to manually
+          supply info the bot just surfaced is the infinite-loop behavior of BRY-125.
+
+  - send: "Are my RSVPs cancelled now or not?"
+    expect:
+      - judge: |
+          Bot should give a clear yes/no and match reality. Current RSVPs: {MY_EVENTS}.
+          FAIL if the bot keeps looping back to 'please tell me which events' or gives an
+          answer that contradicts {MY_EVENTS} — BRY-125 is the bug where the chatbot never
+          converges on actually executing the cancellations.

@@ -1,0 +1,22 @@
+name: "BRY-347: [Assumption/Interpretation] Chat interprets random word as emotional distress"
+description: |
+  Status: Todo — not yet fixed, failure is expected
+  Sending an unrelated or nonsense word causes the chatbot to assume emotional distress rather than asking for clarification.
+
+tags: [bug, todo, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "cheese"
+    expect:
+      - judge: "Response asks for clarification about what the user meant, or lightly acknowledges the unusual input without projecting emotional distress onto the user. FAIL if the chatbot responds with empathetic language about difficult moments, stress, or energy levels (e.g., 'That sounds like a tough moment. Is it mostly work or something else taking up your energy lately?') in response to the single word 'cheese'."
+
+  - send: "I just typed a random word. I'm totally fine."
+    expect:
+      - judge: "Response acknowledges the clarification and does not continue to project emotional distress or ask about stressors. FAIL if the chatbot continues to treat the prior message as a signal of emotional difficulty."
+
+  - send: "pizza"
+    expect:
+      - judge: "Response treats the single-word input as unclear and asks for clarification or a light prompt to continue, rather than inferring emotional distress. FAIL if the chatbot again responds with empathetic framing about stress or low energy."

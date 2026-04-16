@@ -1,0 +1,27 @@
+name: "BRY-186: Long event names without spaces overflow chat message containers"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  When the user asks Sage to create an event whose title is a single long unbroken string, both the user's message bubble and the chatbot's confirmation bubble overflow off the right edge of the screen.
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Open the chatbot from the homepage"
+    expect:
+      - judge: "The chat interface should open and be ready to accept input. FAIL if the chat does not open."
+
+  - send: "Send the chatbot a create-event request whose title is one continuous string with no spaces, e.g. 'Create an event called Supercalifragilisticexpialidocioustestingthebubbleoverflowbehaviorrightnow'"
+    expect:
+      - judge: "The user's message bubble should render with the long unbroken title wrapped, truncated, or horizontally scrollable inside the bubble — it must not extend past the right edge of the chat container or the screen. FAIL if the user's message bubble overflows off the right edge of the screen."
+
+  - send: "Wait for the chatbot's confirmation response that includes the long title echoed back"
+    expect:
+      - judge: "The chatbot's confirmation bubble should contain the long title wrapped, truncated with ellipsis, or otherwise contained within the chat bubble's width. FAIL if the chatbot's response bubble overflows off the right edge of the screen."
+
+  - send: "Inspect both the user and bot bubbles for horizontal overflow against the chat container"
+    expect:
+      - judge: "Both bubbles must be fully contained within the chat message list's horizontal bounds. FAIL if either bubble's text extends beyond the chat container width."

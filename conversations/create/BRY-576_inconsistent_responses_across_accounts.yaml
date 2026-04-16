@@ -1,0 +1,26 @@
+name: "BRY-576: Chat provides inconsistent responses and broken event links across different account types"
+description: |
+  Status: Backlog — not yet fixed, failure is expected.
+  Same chat query produces different outcomes depending on account type (Brya vs non-Brya email); Brya-account links lead to 404s.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "What's happening this week?"
+    expect:
+      - judge: "Bot returns events for this week in a consistent format. FAIL if response differs based on account type in ways that suggest only some users can access event details."
+
+  - send: "Can I get the link for the event page of one of these?"
+    expect:
+      - judge: "Bot provides a direct link to an event page. FAIL if bot says 'I can't send direct links' or similar (the non-Brya user bug), or provides a broken link that leads to 404 (the Brya user bug). Both variants are failures — the behavior should be uniform across account types and links should be valid."
+
+  - send: "The link didn't work for me, it took me to a 404 page"
+    expect:
+      - judge: "Bot acknowledges this is a problem and tries to help. FAIL if bot is dismissive or provides another broken link."
+
+  - send: "Can you RSVP me to one of these events?"
+    expect:
+      - judge: "Bot offers to RSVP regardless of account type. FAIL if RSVP is only offered to some account types — the experience should be consistent for all users."

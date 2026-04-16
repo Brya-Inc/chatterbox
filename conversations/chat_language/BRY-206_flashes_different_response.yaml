@@ -1,0 +1,17 @@
+name: "BRY-206: Chat briefly flashes different response before showing correct one"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  The final bot message must not flicker through an intermediate incorrect response.
+
+tags: [bug, done, chat_language]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Show me upcoming events."
+    expect:
+      - judge: "Expected: The final captured response is coherent, relevant to the request for upcoming events, and not obviously a placeholder/filler/error that was meant to be replaced. FAIL if the response looks like a transient intermediate state (e.g. 'thinking...', partial text, or an unrelated fragment) rather than the final answer."
+  - send: "Tell me about the first one."
+    expect:
+      - judge: "Expected: Sage responds with details about a specific event from the prior list. FAIL if the response is clearly an intermediate/placeholder fragment rather than a complete final answer."

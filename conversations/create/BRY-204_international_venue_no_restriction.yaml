@@ -1,0 +1,18 @@
+name: "BRY-204: Chat allows creating venues in different countries and adding to events"
+description: |
+  Status: Backlog — not yet fixed, failure is expected
+  The platform accepts international venue addresses (outside the US) and assigns them to events without any geographic validation or warning.
+
+tags: [bug, backlog, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create a new venue called 'London Hub' at 45 Baker Street, London, UK."
+    expect:
+      - judge: "Bot should either reject the international address with a message explaining that only US venues are supported, or warn the user before proceeding. FAIL if the bot accepts the venue at a UK address without any geographic restriction or warning — this is the bug."
+
+  - send: "Can you assign the 'London Hub' venue to my new event called 'Global Meetup' on May 20th at 3pm?"
+    expect:
+      - judge: "Bot should not allow assigning an international venue to an event, or should warn that the venue is outside the supported region. FAIL if the bot assigns the UK venue to the event without any restriction or warning."

@@ -1,0 +1,26 @@
+name: "BRY-202: Platform accepts invalid location data with incorrect information"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  A location with a fake postal code, non-existent street, and invalid state can be saved and assigned to an event via chat without any validation.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create a new venue called 'Phantom Hall' at 99999 Nowhere Street, Faketown, ZZ 00000."
+    expect:
+      - judge: |
+          Bot should validate the address — reject it outright or warn the user with
+          something like "Unable to verify this address. Continue anyway?" FAIL if the
+          bot silently accepts an obviously fake postal code, non-existent street, and
+          invalid two-letter state without any verification — that silent acceptance is BRY-202.
+
+  - send: "Is that address valid? Does the postal code 00000 and state ZZ look real to you?"
+    expect:
+      - judge: "Bot should acknowledge that postal code 00000 and state abbreviation ZZ are not valid US values. FAIL if the bot confirms they are valid or ignores the question."
+
+  - send: "Please create an event called 'Phantom Gathering' on June 1st at 6pm at 'Phantom Hall'."
+    expect:
+      - judge: "Bot should either refuse to attach the unverified venue to the event, or warn that the venue location could not be verified. FAIL if the bot happily creates the event with the fake address without any validation warning — that is BRY-202."

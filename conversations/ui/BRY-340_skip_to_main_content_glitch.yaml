@@ -1,0 +1,27 @@
+name: "BRY-340: 'Skip to main content' button appears on login, does nothing, causes visual glitch"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
+  After login, a 'Skip to main content' button briefly appears in the top-left of the homepage; clicking it before it auto-hides does nothing useful and produces a visual glitch (black lines flanking the events list).
+
+tags: [bug, done, ui]
+
+setup:
+  fresh_chat: false
+
+turns:
+  - send: "Log in and land on the homepage, watching the top-left area for the 'Skip to main content' button"
+    expect:
+      - judge: "Either no 'Skip to main content' button should be visible at all, or if present it should be a working accessibility control. FAIL if the button appears transiently and exists purely as a non-functional element."
+
+  - send: "Click the 'Skip to main content' button before it auto-hides"
+    expect:
+      - judge: "Clicking the button should either move keyboard/screen-reader focus to the main content region (proper accessibility behavior) OR the button should never have been present. FAIL if clicking it does nothing functional."
+
+  - send: "Observe the homepage around the events list immediately after clicking the button"
+    expect:
+      - judge: "The homepage layout should remain visually stable with no stray black lines or other rendering artifacts around the events list. FAIL if clicking the button causes black lines to appear flanking the events list before disappearing."
+
+  - send: "Inspect the final state of the page for any lingering visual glitches"
+    expect:
+      - judge: "The homepage should look clean and identical to a normal logged-in homepage with no visual glitches. FAIL if there are residual visual artifacts from clicking the Skip to main content button."

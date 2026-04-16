@@ -1,0 +1,30 @@
+name: "BRY-130: Chatbot offers RSVP during event creation but doesn't execute it"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  When the user asks to create an event AND RSVP themselves in one message, the chatbot confirms both actions multiple times, but after approval/publish no RSVP actually exists.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create an event called 'Morning Run Club' on May 18th at 7am at Central Park with capacity 10, and please RSVP me as attending too."
+    expect:
+      - judge: "Bot should acknowledge both the create request and the RSVP request. FAIL if the bot silently drops the RSVP intent — or, conversely, if it confirms an immediate RSVP for an event that has not yet been published (a confirmation it cannot actually honor is part of BRY-130)."
+
+  - send: "Just to double-check — you will both create the event AND RSVP me, correct? I don't want to end up not attending my own event."
+    expect:
+      - judge: "Bot should give an accurate, honest answer: either (a) it will queue the RSVP for when the event is approved and clearly say so, or (b) it cannot guarantee the RSVP at this time and the user should RSVP after approval. FAIL if the bot confirms a definite RSVP without any caveat — BRY-130 is the bug where the bot confirms an RSVP it never actually executes."
+
+  - send: "Please submit the event for review."
+    expect:
+      - judge: "Bot should confirm the event 'Morning Run Club' has been submitted for admin review. FAIL if the bot errors or refuses."
+
+  - send: "After my event is approved, will I be listed as attending automatically, or do I need to RSVP separately?"
+    expect:
+      - judge: "Bot should give a clear, truthful answer. FAIL if the bot says 'you are already RSVP'd, no further action needed' in a way that contradicts what actually happens on the platform — BRY-130 is the bug where the bot claims the RSVP is done but it never is."
+
+  - send: "Show me my attending list — is 'Morning Run Club' listed there?"
+    expect:
+      - judge: "Bot should accurately report whether 'Morning Run Club' is in the attending list. Current attending: {MY_EVENTS}. FAIL if the bot confidently says the user is attending 'Morning Run Club' when {MY_EVENTS} shows otherwise — claiming an RSVP that doesn't exist is BRY-130."

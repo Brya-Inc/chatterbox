@@ -1,0 +1,26 @@
+name: "BRY-122: Can't delete an event"
+description: |
+  Status: In Review — status unclear — testing to determine if still active
+  Admin users receive an error popup when attempting to delete an event, even with full admin access.
+
+tags: [bug, in_review, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "I want to create a test event so I can try deleting it. Can you help me create an event called 'Test Deletion Event' for next Friday at 2pm?"
+    expect:
+      - judge: "Bot should acknowledge the request and begin collecting event creation details. FAIL if the bot refuses or cannot start the event creation flow."
+
+  - send: "Let's say the capacity is 10 people and no description needed. Can you go ahead and create it?"
+    expect:
+      - judge: "Bot should confirm the event was created or ask for any remaining required fields. FAIL if the bot errors out or cannot proceed with creation."
+
+  - send: "Great. Now I need to delete the 'Test Deletion Event'. Can you delete it for me?"
+    expect:
+      - judge: "Bot should attempt to delete the event or confirm the deletion. FAIL if the bot says it cannot delete events, returns an error, or offers no path to deletion."
+
+  - send: "Yes, I confirm I want to delete this event. Please go ahead."
+    expect:
+      - judge: "Bot should confirm the event has been successfully deleted. FAIL if the bot reports an error, gets stuck in a loop, or says deletion is not possible."

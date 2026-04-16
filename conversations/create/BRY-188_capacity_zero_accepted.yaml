@@ -1,0 +1,30 @@
+name: "BRY-188: Event creation allows capacity of 0 and accepts RSVPs despite zero capacity"
+description: |
+  Status: Done — previously fixed, failure = regression.
+  Platform accepts capacity 0 event creation without warning, then users can still RSVP to a zero-capacity event after publication.
+
+tags: [bug, done, create]
+
+setup:
+  admin_clear: true
+
+turns:
+  - send: "Please create an event called 'Silent Study Hall' on May 28th at 10am at the library with a capacity of 0."
+    expect:
+      - judge: |
+          Bot should either reject the capacity 0 outright or warn the user, e.g. "Setting
+          capacity to 0 means no one can attend. Did you mean unlimited?" and ask for
+          clarification. FAIL if the bot silently accepts capacity 0 and proceeds with
+          creation as if it were a normal number — accepting 0 silently is BRY-188.
+
+  - send: "Yes, capacity 0 is what I meant — submit the event."
+    expect:
+      - judge: "Bot should still surface a warning or refuse to submit a zero-capacity event (since no one could attend). FAIL if the bot simply confirms submission of a capacity-0 event without any flag or warning."
+
+  - send: "Can users RSVP to a capacity-0 event?"
+    expect:
+      - judge: "Bot should clearly say no — a capacity-0 event cannot accept RSVPs. FAIL if the bot says yes, says capacity 0 is unlimited, or says RSVPs are allowed despite the zero capacity — claiming RSVPs are allowed is part of BRY-188."
+
+  - send: "RSVP me to 'Silent Study Hall'."
+    expect:
+      - judge: "Bot should refuse the RSVP because the event has zero capacity (or because it is still pending review). FAIL if the bot confirms a successful RSVP to a zero-capacity event."
