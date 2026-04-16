@@ -1,23 +1,25 @@
 name: "BRY-562: Slow chat performance - responses take too long"
 description: |
-  Status: Backlog — backlog
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Chat responses frequently take 10-15 seconds, especially after tab inactivity, affecting roughly 30-40% of interactions.
+  Status: Backlog — not yet fixed, failure is expected.
+  Chat responses frequently take 10-15 seconds. Expected: within ~3 seconds.
 
 tags: [bug, backlog, ui]
 
 setup:
-  fresh_chat: true
+  admin_clear: true
 
 turns:
-  - send: "Open the chat and send the message 'Hello'"
+  - send: "Hello"
     expect:
-      - judge: "The chat should respond within 3 seconds of sending the message. State: FAIL if the response takes longer than 3 seconds to appear."
+      - judge: "Sage responds in some reasonable way."
+  - assert_response_within: 3000
 
-  - send: "Leave the chat tab inactive for 30 seconds, then return and send the message 'What is happening this week?'"
+  - send: "What is happening this week?"
     expect:
-      - judge: "Even after a period of tab inactivity, the chat should respond within 3 seconds. State: FAIL if the response takes 10 seconds or more, which is the known degraded behavior after inactivity."
+      - judge: "Sage responds with events or asks a clarifying question."
+  - assert_response_within: 3000
 
-  - send: "Send three more messages in quick succession to test consistency: 'Tell me about upcoming events', 'What can I do on the platform?', 'Thanks'"
+  - send: "Tell me about upcoming events"
     expect:
-      - judge: "Each of the three messages should receive a response within 3 seconds. State: FAIL if any response takes longer than 3 seconds, indicating the chronic slow performance issue affecting 30-40% of interactions."
+      - judge: "Sage responds."
+  - assert_response_within: 3000

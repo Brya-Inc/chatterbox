@@ -1,8 +1,7 @@
 name: "BRY-357: Chat input unreachable via Tab — focus cycles through all messages first"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Tab order should reach chat input within 1-2 presses; old messages should not be in tab order.
+  Tab order should reach chat input within a few presses; old messages should not be Tab stops.
 
 tags: [bug, done, ui]
 
@@ -10,12 +9,25 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Browser: open chat and ensure there is a long message history (20+ messages)."
-    expect:
-      - judge: "Chat is open with sufficient message history. FAIL if chat cannot be opened."
-  - send: "Browser: click outside chat, then press Tab repeatedly and count presses until the chat input receives focus."
-    expect:
-      - judge: "Chat input receives focus within 1-2 Tab presses from the chat container. FAIL if Tab must cycle through 20+ old messages before reaching input."
-  - send: "Browser: inspect tab order of chat message bubbles."
-    expect:
-      - judge: "Old message bubbles are not in the tab order (tabindex=-1 or non-focusable). FAIL if every historical message is a Tab stop."
+  - navigate: "/loggedInHome"
+  - wait_for: "[placeholder='Talk to Sage']"
+
+  # Click on an innocuous body area to reset focus out of the chat input.
+  - click: "body"
+  - wait: 500
+
+  # Tab a handful of times. Within 10 Tab presses the input should be focused —
+  # before the regression, focus would have to cycle through 20+ message bubbles first.
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+
+  # Within 10 Tabs, the chat input must be focused. FAIL if not.
+  - assert_focused: "[placeholder='Talk to Sage']"

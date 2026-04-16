@@ -1,8 +1,8 @@
 name: "BRY-371: Back button from support chat navigates to wrong page and doesn't load"
 description: |
-  Status: Backlog — backlog
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Browser back button from support chat navigates to a random previous URL instead of homepage and does not actually load the page.
+  Status: Backlog — not yet fixed, failure is expected.
+  Opening the support chat then pressing browser back navigates to a random previous URL
+  (not the homepage) and the page doesn't actually reload its content.
 
 tags: [bug, backlog, ui]
 
@@ -10,14 +10,18 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "From the homepage, click the black chatbot button to open the support chat"
-    expect:
-      - judge: "The support chat interface should open successfully. State: FAIL if the chat does not open or the page navigates away unexpectedly."
+  # Start at the homepage.
+  - navigate: "/loggedInHome"
+  - wait: 1500
 
-  - send: "Press the browser back button while in the support chat"
-    expect:
-      - judge: "The browser should navigate back to the homepage and the homepage should fully load with all content visible. State: FAIL if the URL changes to a random page from a previous browsing session rather than the homepage, or if the URL changes but the page does not actually load its content."
+  # Click the support-chat launcher (Crisp/Brya support button).
+  - click: "button[aria-label*='Support' i], button[aria-label*='chat with Brya' i], [class*='crisp' i]"
+  - wait: 2000
 
-  - send: "Observe the current page state without refreshing"
-    expect:
-      - judge: "The page content should be fully loaded and interactive without requiring a manual refresh. State: FAIL if the page content is blank, stale, or not loaded and a manual refresh is required to see any content."
+  # Hit the browser back button.
+  - back
+  - wait: 2000
+
+  # Expected: we're back on the homepage and it's loaded.
+  - assert_url: "/loggedInHome"
+  - assert_visible: "[placeholder='Talk to Sage']"

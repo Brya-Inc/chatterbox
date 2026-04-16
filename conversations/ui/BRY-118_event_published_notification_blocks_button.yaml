@@ -1,8 +1,8 @@
 name: "BRY-118: \"Event published\" box blocks back to home page button"
 description: |
-  Status: In Review — in_review
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Green "event published" notification overlays and blocks the "Back to site" button in the admin panel for at least 10 seconds.
+  Status: In Review — status unclear.
+  Green "event published" notification overlays and blocks the "Back to site" button
+  in the admin panel for at least 10 seconds after publishing.
 
 tags: [bug, in_review, ui]
 
@@ -10,14 +10,31 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Navigate to the admin tab and open an unpublished event"
-    expect:
-      - judge: "Admin event editing interface should be accessible and display a publish action. State: FAIL if the admin interface does not load or the publish option is not visible."
+  # Go to the admin panel (only works when logged in as a Brya admin).
+  - navigate: "/admin"
+  - wait: 2000
 
-  - send: "Click the publish button to publish the event"
-    expect:
-      - judge: "A green notification confirming the event was published should appear. The 'Back to site' button should still be accessible and not obscured by the notification. State: FAIL if the green 'Event published' notification appears and overlaps or blocks the 'Back to site' button."
+  # Click into an event that's awaiting approval.
+  # NOTE: selector below is illustrative — may need to be tuned for the real admin DOM.
+  - click: "text=Events to Approve"
+  - wait: 1500
 
-  - send: "Immediately attempt to click the 'Back to site' button after the notification appears"
-    expect:
-      - judge: "The 'Back to site' button should be clickable and navigate away from the admin panel immediately after publishing. State: FAIL if the notification box covers the button and prevents clicking it for 10 or more seconds."
+  # Pick the first event card and open it.
+  - click: "a[href*='/admin/events/']"
+  - wait: 2000
+
+  # Publish the event.
+  - click: "button:has-text('Publish')"
+
+  # Wait long enough for the notification to appear, then check: Back button should
+  # still be clickable (not obscured by the notification).
+  - wait: 1000
+  - assert_visible: "text=Back to site"
+
+  # The actual bug: the notification overlays the button for 10+ seconds.
+  # We immediately try to click "Back to site" — should succeed.
+  - click: "text=Back to site"
+  - wait: 1500
+
+  # If click worked, we should have left the admin event page.
+  - assert_url: "^(?!.*admin/events/\\d+).*$"

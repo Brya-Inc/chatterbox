@@ -1,8 +1,8 @@
 name: "BRY-387: Support chat greeting displays question mark at start in Chrome (works in Edge)"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Platform was misdetecting Hebrew/RTL in Chrome, flipping punctuation to the start. English should render LTR regardless of browser.
+  Platform was misdetecting Hebrew/RTL in Chrome, flipping punctuation to the start of strings.
+  English should render LTR regardless of browser — question mark must appear at the END.
 
 tags: [bug, done, ui]
 
@@ -10,12 +10,16 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Browser (Chrome): open the support chat widget."
-    expect:
-      - judge: "Support chat widget opens successfully in Chrome. FAIL if widget does not open."
-  - send: "Browser (Chrome): read the greeting text, page title, and input placeholder."
-    expect:
-      - judge: "Text reads naturally left-to-right, e.g. 'Anything we can help with?', 'Need help?', 'Hi chat'. FAIL if text appears as '?Anything we can help with', '?Need help', '?hi chat' with question mark flipped to the start (original bug — RTL misdetection in Chrome)."
-  - send: "Browser (Chrome): verify that none of the visible English strings begin with a question mark or other trailing punctuation moved to the front."
-    expect:
-      - judge: "No English strings in the support chat UI have punctuation mirrored to the start of the line. FAIL if any string shows RTL-style punctuation flipping."
+  - navigate: "/loggedInHome"
+  - wait: 1000
+
+  # Open the support chat (the Crisp/support widget — separate from Sage).
+  - click: "[class*='crisp' i], button[aria-label*='Support' i], button[aria-label*='help' i]"
+  - wait: 2500
+
+  # The greeting/page-title area should end with "?" not start with it.
+  # The broken state was "?Anything we can help with" or "?Need help".
+  # We look for whatever prompt is visible and confirm it doesn't start with "?".
+  - assert_text:
+      selector: "[class*='crisp' i] h1, [class*='crisp' i] h2, [class*='crisp' i] [role='heading']"
+      ends_with: "?"

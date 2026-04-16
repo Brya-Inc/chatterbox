@@ -3,7 +3,6 @@ description: |
   Status: Backlog — not yet fixed, failure is expected.
   Entering an email on /login and clicking Continue (or pressing Enter) produces no response —
   no loading state, no error, and no navigation — leaving the user stuck on the email entry screen.
-  Note: requires UI automation — steps describe browser actions, not chat messages.
 
 tags: [bug, backlog, auth]
 
@@ -11,14 +10,15 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Navigate to /login and enter a valid email address in the email input field"
-    expect:
-      - judge: "The email input field should accept the entered address without error. FAIL if the field rejects input or the page errors."
+  - navigate: "/login"
+  - wait_for: "[placeholder='Enter email address']"
 
-  - send: "Click the Continue button on the login page"
-    expect:
-      - judge: "The Continue button should respond immediately with a visible loading state and then navigate to either the password entry or magic link confirmation page. FAIL if the button shows no loading state, no error message, and no navigation — leaving the user stuck on the email entry screen."
+  - fill:
+      selector: "[placeholder='Enter email address']"
+      value: "test-nonexistent-user@example.com"
 
-  - send: "Return to /login, enter the email again, and press the Enter key instead of clicking Continue"
-    expect:
-      - judge: "Pressing Enter should be equivalent to clicking Continue and should also navigate to the next step. FAIL if pressing Enter likewise produces no response and the user remains stuck on the email entry screen."
+  - click: "text=\"Continue\""
+  - wait: 3000
+
+  # FAIL if we're still stuck on the original /login email-entry page.
+  - assert_url: "(email-confirmation|password|postLogin)"

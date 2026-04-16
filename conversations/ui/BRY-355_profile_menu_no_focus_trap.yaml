@@ -1,8 +1,8 @@
 name: "BRY-355: Profile menu does not trap keyboard focus — Tab skips menu items"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Resolved "By Design" per WAI-ARIA Menu pattern: arrow keys navigate menu items; Tab is expected to close menu. Regression would be arrow keys failing.
+  Resolved "By Design" per WAI-ARIA Menu pattern: arrow keys navigate menu items, Tab closes
+  the menu. The regression test verifies arrow-key navigation works when the menu is open.
 
 tags: [bug, done, ui]
 
@@ -10,15 +10,20 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Browser: load home page and press Tab until the profile button (top-right avatar) is focused."
-    expect:
-      - judge: "Profile button receives a visible focus indicator. FAIL if Tab never reaches the profile button or focus ring is missing."
-  - send: "Browser: press Enter to open the profile menu."
-    expect:
-      - judge: "Profile menu opens and first menu item receives focus. FAIL if menu does not open, or focus is not moved into the menu."
-  - send: "Browser: press ArrowDown to navigate between menu items."
-    expect:
-      - judge: "Arrow keys move focus between menu items per WAI-ARIA Menu pattern. FAIL if arrow keys do not cycle through menu items."
-  - send: "Browser: press Tab while focused inside the menu."
-    expect:
-      - judge: "Tab closes the menu (per WAI-ARIA spec) — this is the documented by-design behavior. FAIL only if arrow key navigation (previous step) was broken."
+  - navigate: "/loggedInHome"
+  - wait: 1500
+
+  # Open the profile menu by clicking the avatar/user button (top-right).
+  - click: "button:has-text('Michael'), button:has-text('Mike'), button:has-text('Arianna')"
+  - wait: 500
+
+  # The profile menu should now be visible — verify by checking for an Admin or Logout option.
+  - assert_visible: "text=Logout"
+
+  # Per WAI-ARIA Menu pattern, ArrowDown moves focus to the next menu item.
+  - press_key: "ArrowDown"
+  - wait: 300
+
+  # After ArrowDown, focus must be on SOME menu item (role=menuitem or similar).
+  # FAIL if arrow key did nothing (the actual regression to catch).
+  - assert_focused: "[role='menuitem'], [role='menu'] button, [role='menu'] a"

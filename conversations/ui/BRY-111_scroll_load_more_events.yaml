@@ -1,8 +1,8 @@
 name: "BRY-111: Scroll failure limits event visibility to first 10 entries"
 description: |
-  Status: In Review — in_review
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  "Load more events" does not work on home page, capping visible events at 10 regardless of how many exist.
+  Status: In Review — status unclear.
+  Home page's infinite scroll doesn't trigger "load more" past 10 events, so any event
+  beyond position 10 (which is date-sorted) is unreachable.
 
 tags: [bug, in_review, ui]
 
@@ -10,14 +10,17 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Navigate to the home page and scroll to the bottom of the event listing"
-    expect:
-      - judge: "Page should display a 'Load more events' button or trigger loading of additional events beyond the first 10. State: FAIL if only 10 events are visible and no further events can be loaded."
+  - navigate: "/loggedInHome"
+  - wait_for: "a[href*='/event/']"
+  - wait: 1000
 
-  - send: "Click or activate the 'Load more events' control at the bottom of the event list"
-    expect:
-      - judge: "Additional events beyond the initial 10 should load and appear in the list. State: FAIL if the event list remains capped at 10 entries and no new events appear after attempting to load more."
+  # Scroll to bottom repeatedly — each scroll should trigger more events to load.
+  - scroll: { to: "bottom" }
+  - wait: 2000
+  - scroll: { to: "bottom" }
+  - wait: 2000
+  - scroll: { to: "bottom" }
+  - wait: 2000
 
-  - send: "Continue scrolling down past the newly loaded events to see if further events can be reached"
-    expect:
-      - judge: "User should be able to continue scrolling and loading events all the way to the last posted event. State: FAIL if scrolling stops loading new events before all events have been shown."
+  # After scrolling, we need more than 10 event links in the DOM. FAIL if capped at 10.
+  - assert_count: { selector: "a[href*='/event/']", at_least: 11 }

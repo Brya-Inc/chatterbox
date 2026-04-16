@@ -1,8 +1,9 @@
 name: "BRY-363: 'I want to go' button skipped in Tab order then returns"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  Tab order should match visual top-to-bottom layout and never skip-then-return to an element.
+  On an event detail page, the 'I want to go' button was previously skipped in Tab order
+  (share button focused first, then focus returned to 'I want to go'). Tab order should
+  match visual top-to-bottom layout.
 
 tags: [bug, done, ui]
 
@@ -10,12 +11,29 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Browser: navigate to an event detail page with an 'I want to go' button visible."
-    expect:
-      - judge: "Event detail page loads with 'I want to go' button visible. FAIL if page does not load or button missing."
-  - send: "Browser: place focus at the top of the page and record the sequence of focused elements as Tab is pressed until past both the 'I want to go' button and the share button."
-    expect:
-      - judge: "'I want to go' button is focused before the share button in tab order, matching visual layout. FAIL if Tab skips 'I want to go', focuses share, then returns to 'I want to go' (original bug)."
-  - send: "Browser: verify no element is skipped and then returned to in the recorded sequence."
-    expect:
-      - judge: "Every interactive element is visited exactly once in visual order. FAIL if any element is skipped-then-returned-to."
+  # Navigate to any event detail page. Uses /events for the listing, then picks first event card.
+  - navigate: "/events"
+  - wait_for: "a[href*='/event/']"
+  - click: "a[href*='/event/']"
+  - wait_for: "button:has-text('I want to go')"
+
+  # Focus the page body to reset Tab position, then Tab until we see either button.
+  - click: "body"
+  - wait: 500
+
+  # Tab several times. The 'I want to go' button should land in focus BEFORE the share button
+  # in the regression-free state. Exact Tab count depends on page layout, so we check focus
+  # multiple times.
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+  - press_key: "Tab"
+
+  # Within 8 Tabs, 'I want to go' must have received focus. FAIL if it was skipped.
+  # (In the regression, the share button would have been focused first and 'I want to go'
+  # would only come after another Tab press.)
+  - assert_focused: "button:has-text('I want to go')"

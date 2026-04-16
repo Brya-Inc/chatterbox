@@ -1,27 +1,19 @@
 name: "BRY-186: Long event names without spaces overflow chat message containers"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Note: UI automation bug — steps describe browser actions, not chat messages. Requires UI harness extension to run fully.
-  When the user asks Sage to create an event whose title is a single long unbroken string, both the user's message bubble and the chatbot's confirmation bubble overflow off the right edge of the screen.
+  When Sage echoes back a long unbroken event title, the chat bubble should wrap, truncate,
+  or scroll horizontally within its container — not extend past the chat list width.
 
 tags: [bug, done, ui]
 
 setup:
-  fresh_chat: false
+  admin_clear: true
 
 turns:
-  - send: "Open the chatbot from the homepage"
+  - send: "Create an event called Supercalifragilisticexpialidocioustestingthebubbleoverflowbehaviorrightnow"
     expect:
-      - judge: "The chat interface should open and be ready to accept input. FAIL if the chat does not open."
+      - judge: "Sage acknowledges the event name (may ask follow-up questions). Just confirm the bot didn't error."
 
-  - send: "Send the chatbot a create-event request whose title is one continuous string with no spaces, e.g. 'Create an event called Supercalifragilisticexpialidocioustestingthebubbleoverflowbehaviorrightnow'"
-    expect:
-      - judge: "The user's message bubble should render with the long unbroken title wrapped, truncated, or horizontally scrollable inside the bubble — it must not extend past the right edge of the chat container or the screen. FAIL if the user's message bubble overflows off the right edge of the screen."
-
-  - send: "Wait for the chatbot's confirmation response that includes the long title echoed back"
-    expect:
-      - judge: "The chatbot's confirmation bubble should contain the long title wrapped, truncated with ellipsis, or otherwise contained within the chat bubble's width. FAIL if the chatbot's response bubble overflows off the right edge of the screen."
-
-  - send: "Inspect both the user and bot bubbles for horizontal overflow against the chat container"
-    expect:
-      - judge: "Both bubbles must be fully contained within the chat message list's horizontal bounds. FAIL if either bubble's text extends beyond the chat container width."
+  # After the exchange, the last chat bubble in the message list must not overflow
+  # its container horizontally. FAIL if Sage's bubble extends beyond its box.
+  - assert_no_overflow: ".cs-message-list .bg-tertiary:last-of-type"
