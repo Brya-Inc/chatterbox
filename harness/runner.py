@@ -188,9 +188,48 @@ class Runner:
         result = ConversationResult(conversation=conv)
         transcript: list[tuple[str, str]] = []
 
+        # Multi-tab state. The default page is implicitly named "default".
+        tabs: dict[str, Page] = {"default": driver.page}
+        current_tab = "default"
+
         last_send_ms: int | None = None
         for i, turn in enumerate(conv.turns, start=1):
             try:
+                # Tab-management steps are handled inline because they mutate `tabs` / `current_tab`.
+                if turn.type == "open_tab":
+                    name = turn.value
+                    if name in tabs:
+                        raise RuntimeError(f"tab {name!r} already open")
+                    new_page = driver.page.context.new_page()
+                    tabs[name] = new_page
+                    current_tab = name
+                    print(f"\n  [Turn {i}] ▶  open_tab: {name!r} (now current)")
+                    result.turns.append(TurnResult(index=i, send=f"open_tab {name!r}", response=""))
+                    continue
+
+                if turn.type == "switch_tab":
+                    name = turn.value
+                    if name not in tabs:
+                        raise RuntimeError(f"tab {name!r} not open; available: {sorted(tabs)}")
+                    current_tab = name
+                    tabs[name].bring_to_front()
+                    print(f"\n  [Turn {i}] ▶  switch_tab: {name!r}")
+                    result.turns.append(TurnResult(index=i, send=f"switch_tab {name!r}", response=""))
+                    continue
+
+                if turn.type == "close_tab":
+                    name = turn.value
+                    if name == "default":
+                        raise RuntimeError("cannot close the default tab")
+                    if name in tabs:
+                        tabs[name].close()
+                        del tabs[name]
+                        if current_tab == name:
+                            current_tab = "default"
+                    print(f"\n  [Turn {i}] ▶  close_tab: {name!r}")
+                    result.turns.append(TurnResult(index=i, send=f"close_tab {name!r}", response=""))
+                    continue
+
                 if turn.type == "send":
                     print(f"\n  [Turn {i}] ▶  send: {turn.value!r}")
                     start = time.time()
@@ -215,9 +254,10 @@ class Runner:
                     )
                     transcript.append((turn.value, response))
                 else:
-                    # Browser action or page-state assertion.
+                    # Browser action or page-state assertion — run against the currently active tab.
+                    active_page = tabs[current_tab]
                     action_desc, maybe_check = _execute_non_send(
-                        driver.page, turn, self.cfg, last_send_ms
+                        active_page, turn, self.cfg, last_send_ms
                     )
                     print(f"\n  [Turn {i}] ▶  {turn.type}: {action_desc}")
                     tres = TurnResult(index=i, send=action_desc, response="")

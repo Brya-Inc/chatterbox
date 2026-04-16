@@ -17,6 +17,7 @@ BROWSER_STEPS = {
     "navigate", "click", "fill", "press_key",
     "refresh", "back", "wait", "wait_for",
     "scroll",
+    "open_tab", "switch_tab", "close_tab",
 }
 ASSERT_STEPS = {
     "assert_visible", "assert_not_visible",

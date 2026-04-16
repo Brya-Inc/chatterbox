@@ -1,0 +1,33 @@
+name: "Smoke: multi-tab primitives work"
+description: |
+  Infrastructure smoke test for open_tab/switch_tab/close_tab.
+  Opens a second tab, navigates it, switches back, and asserts each tab is on the expected URL.
+
+tags: [smoke, infrastructure]
+
+setup:
+  fresh_chat: false
+
+turns:
+  # Start on the default tab at the home page.
+  - navigate: "/loggedInHome"
+  - wait: 1000
+  - assert_url: "loggedInHome"
+
+  # Open a second tab and navigate it somewhere different.
+  - open_tab: "second"
+  - navigate: "/events"
+  - wait: 1500
+  - assert_url: "/events"
+
+  # Switch back to the default tab — it should still be on /loggedInHome.
+  - switch_tab: "default"
+  - assert_url: "loggedInHome"
+
+  # Switch forward to second tab — should still be on /events.
+  - switch_tab: "second"
+  - assert_url: "/events"
+
+  # Close the second tab; we should return to default.
+  - close_tab: "second"
+  - assert_url: "loggedInHome"
