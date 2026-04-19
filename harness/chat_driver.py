@@ -243,13 +243,21 @@ class ChatDriver:
 
     def _reset_via_reload(self) -> None:
         """
-        Non-admin fallback for clear_chat_admin(): reload the home page and
-        reopen the chat. Does NOT wipe server-side chat history (that requires
-        admin access), but gives tests a clean UI state to work from.
+        Non-admin fallback for clear_chat_admin(): reload the home page,
+        reopen the chat, and send a context-reset message so Sage treats
+        the next message as a fresh start.
         """
         self._safe_goto_home()
         time.sleep(1)
-        print("  [admin] chat reset via page reload (server-side history not cleared)")
+        self.open_chat()
+        # Send a reset message to break Sage's context from previous tests.
+        try:
+            self.send("Please start a completely new conversation with me. "
+                      "Forget everything we discussed before and treat my next "
+                      "message as if we are talking for the first time.")
+            print("  [admin] chat reset via context-reset message (non-admin fallback)")
+        except Exception:
+            print("  [admin] chat reset via page reload (context-reset message failed)")
 
     def _safe_goto_home(self) -> None:
         """Navigate to /loggedInHome, handling redirects that Firefox/WebKit

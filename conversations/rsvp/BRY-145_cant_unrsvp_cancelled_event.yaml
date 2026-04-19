@@ -3,8 +3,9 @@ description: |
   Status: Done — previously fixed, failure = regression.
   When an event organizer cancels an event, users who RSVP'd should be able to un-RSVP
   or have it auto-removed. Bug: the cancelled event stays stuck in the attending list.
-  This test uses two users: mike@brya.com (admin/organizer) creates and cancels the event,
-  mikekutliroff.is13@gmail.com (regular user) RSVPs and then tries to un-RSVP after cancellation.
+  This test uses two users: mike@brya.com creates and cancels the event,
+  mikekutliroff.is13@gmail.com RSVPs and then tries to un-RSVP after cancellation.
+  Any member can cancel their own events through the chat — not admin-only.
 
 tags: [bug, done, rsvp]
 

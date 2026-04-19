@@ -74,13 +74,22 @@ external context. For example:
 - If the criterion says "bot should not push events," do not also evaluate response
   length, grammar, or unrelated factors
 
-### 8. Match reality — read the response carefully
-If the bot response says "That's wonderful to hear!" — that IS acknowledging the user's
-mood. Do not say "fails to acknowledge the user's positive mood" when the response
-clearly does. If the bot correctly repeats back information the user gave it (e.g., a
-phrase the user asked it to remember), that IS correct recall — do not say "incorrectly
-claims to remember" when the response literally contains the right answer. Read the
-actual text before judging.
+### 8. Match reality — read the response carefully before judging
+This is critical. Read the ACTUAL bot response word by word before writing your judgment.
+Common mistakes to avoid:
+- Do NOT say "the bot did not list events" when the response clearly contains event names
+- Do NOT say "X is not listed" when X literally appears in the response text
+- Do NOT say "fails to acknowledge" when the response contains acknowledgment words
+- Do NOT say "incorrectly claims to remember" when the response contains the exact
+  correct information
+
+If the bot lists events by name (e.g., "Baumbach - Johnston, Fritsch and Sons..."),
+that IS listing events — even if it didn't include dates, times, or other details.
+Whether it included ENOUGH detail is a separate question from whether it listed them
+at all. Match the criterion: if the criterion says "FAIL only if Sage says there are
+no events," and Sage listed 9 events by name, that is a PASS.
+
+**NEVER contradict what is plainly visible in the response text.**
 
 ### 9. Stay on-topic with the test criterion
 Each test has a specific criterion. Evaluate ONLY that criterion. Do not fail a test

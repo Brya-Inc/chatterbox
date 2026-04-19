@@ -1,7 +1,8 @@
 name: "BRY-122: Can't delete an event"
 description: |
   Status: In Review — status unclear — testing to determine if still active
-  Admin users receive an error popup when attempting to delete an event, even with full admin access.
+  Users receive an error when attempting to delete their own event through the chat.
+  Any member can cancel/delete events they created — this is not admin-only.
 
 tags: [bug, in_review, create]
 
