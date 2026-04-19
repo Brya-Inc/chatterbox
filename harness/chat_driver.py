@@ -186,21 +186,46 @@ class ChatDriver:
             self._reset_via_reload()
             return
 
+        # Wait for the admin panel page to fully load before looking for buttons.
+        time.sleep(1.5)
+        try:
+            self.page.wait_for_load_state("domcontentloaded", timeout=5000)
+        except PWTimeout:
+            pass
+
         # Click "Start fresh conversation" (fallback: "Delete all messages")
         cleared = False
-        for label in ["start fresh conversation", "delete all messages"]:
+        for label in [
+            "start fresh conversation",
+            "delete all messages",
+            "Start fresh",
+            "Clear conversation",
+            "Reset conversation",
+        ]:
             try:
-                sel = f"text={label}"
-                self.page.wait_for_selector(sel, state="visible", timeout=5000)
+                sel = f'button:has-text("{label}")'
+                self.page.wait_for_selector(sel, state="visible", timeout=3000)
                 self.page.click(sel)
                 print(f"  [admin] clicked '{label}'")
                 cleared = True
                 break
             except PWTimeout:
-                continue
+                # Also try as plain text selector (not just buttons).
+                try:
+                    sel = f"text={label}"
+                    self.page.wait_for_selector(sel, state="visible", timeout=2000)
+                    self.page.click(sel)
+                    print(f"  [admin] clicked '{label}' (text)")
+                    cleared = True
+                    break
+                except PWTimeout:
+                    continue
 
         if not cleared:
-            raise RuntimeError("Could not find 'Start fresh conversation' or 'Delete all messages' in admin panel")
+            # Last resort: fall back to page reload instead of crashing.
+            print("  [admin] could not find clear-conversation button, falling back to page reload")
+            self._reset_via_reload()
+            return
 
         # Handle any confirmation dialog
         try:
