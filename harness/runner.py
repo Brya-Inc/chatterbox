@@ -8,7 +8,7 @@ from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_
 import re
 import time
 
-from .auth import ensure_logged_in
+from .auth import ensure_logged_in, fetch_magic_link_url
 from .chat_driver import ChatDriver
 from .config import BROWSER_ENGINES, Config, UserCreds
 from .judge import Judge, JudgeContext
@@ -192,6 +192,10 @@ class Runner:
         tabs: dict[str, Page] = {"default": driver.page}
         current_tab = "default"
 
+        # Test-scoped variables: values stored by fetch_magic_link and similar steps,
+        # interpolated into later string values via $name placeholders.
+        variables: dict[str, str] = {}
+
         last_send_ms: int | None = None
         for i, turn in enumerate(conv.turns, start=1):
             try:
@@ -229,6 +233,27 @@ class Runner:
                     print(f"\n  [Turn {i}] ▶  close_tab: {name!r}")
                     result.turns.append(TurnResult(index=i, send=f"close_tab {name!r}", response=""))
                     continue
+
+                # fetch_magic_link stores its result in `variables` for later steps to use.
+                if turn.type == "fetch_magic_link":
+                    email = turn.value["email"]
+                    store_as = turn.value["store_as"]
+                    link = fetch_magic_link_url(self.cfg, email)
+                    if not link:
+                        raise RuntimeError(
+                            f"fetch_magic_link: could not retrieve magic link for {email!r} "
+                            f"from PLAYWRIGHT_LOGIN_URL (did the login flow run for this email?)"
+                        )
+                    variables[store_as] = link
+                    preview = link[:60] + ("…" if len(link) > 60 else "")
+                    print(f"\n  [Turn {i}] ▶  fetch_magic_link for {email!r} → ${store_as} = {preview}")
+                    result.turns.append(TurnResult(
+                        index=i, send=f"fetch_magic_link {email!r} → ${store_as}", response="",
+                    ))
+                    continue
+
+                # Apply $variable substitution to turn values before any non-send step runs.
+                turn = _substitute_vars(turn, variables)
 
                 if turn.type == "send":
                     print(f"\n  [Turn {i}] ▶  send: {turn.value!r}")
@@ -293,6 +318,27 @@ def _first_line(s: str) -> str:
     return (s.splitlines()[0] if s else "")[:160]
 
 
+def _substitute_vars(turn: Turn, variables: dict[str, str]) -> Turn:
+    """Return a copy of `turn` with $name placeholders replaced by stored variable values."""
+    if not variables:
+        return turn
+    return Turn(
+        type=turn.type,
+        value=_apply_vars_to_value(turn.value, variables),
+        expect=turn.expect,
+    )
+
+
+def _apply_vars_to_value(value, variables: dict[str, str]):
+    if isinstance(value, str):
+        for name, v in variables.items():
+            value = value.replace(f"${name}", v)
+        return value
+    if isinstance(value, dict):
+        return {k: _apply_vars_to_value(vv, variables) for k, vv in value.items()}
+    return value
+
+
 def _execute_non_send(page, turn: Turn, cfg: Config, last_send_ms: int | None = None) -> tuple[str, CheckResult | None]:
     """
     Run a non-`send` step. Returns (human-readable description, optional CheckResult).
@@ -325,6 +371,17 @@ def _execute_non_send(page, turn: Turn, cfg: Config, last_send_ms: int | None = 
         page.reload()
         page.wait_for_load_state("domcontentloaded")
         return ("browser refresh", None)
+
+    if t == "clear_cookies":
+        # Clears cookies AND localStorage for the current context — effectively logs
+        # out every tab sharing this context. Useful before triggering a fresh login
+        # flow inside a test.
+        page.context.clear_cookies()
+        try:
+            page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
+        except Exception:
+            pass  # best-effort; some pages may not expose storage
+        return ("clear_cookies (logged out)", None)
 
     if t == "back":
         page.go_back()

@@ -39,7 +39,16 @@ def ensure_logged_in(
         return
 
     if cfg.playwright_login_url and cfg.playwright_auth_key and user.email:
-        _login_magic_link(page, cfg, user)
+        try:
+            _login_magic_link(page, cfg, user)
+        except RuntimeError:
+            if user.password:
+                print(f"  [auth] magic-link failed for {user.email}, falling back to password login")
+                page.goto(f"{cfg.base_url}/login")
+                page.wait_for_load_state("domcontentloaded")
+                _login_password(page, cfg, user)
+            else:
+                raise
     elif user.email and user.password:
         _login_password(page, cfg, user)
     else:
@@ -133,17 +142,37 @@ def _login_magic_link(page: Page, cfg: Config, user: UserCreds) -> None:
 _MAGIC_HREF_RE = re.compile(r'href=["\']([^"\']*code=[^"\']*)["\']', re.IGNORECASE)
 
 
+def fetch_magic_link_url(cfg: Config, email: str) -> str | None:
+    """
+    Public helper: fetch the most recent magic link URL for `email` from the
+    test endpoint (PLAYWRIGHT_LOGIN_URL). Used by the `fetch_magic_link` step
+    type in test YAMLs.
+
+    The endpoint returns the last-generated link — so a login attempt (fill
+    email + click Continue) must have happened earlier in the test.
+    """
+    return _poll_magic_link(cfg, UserCreds(email=email, password=""))
+
+
 def _poll_magic_link(cfg: Config, user: UserCreds) -> str | None:
     url = f"{cfg.playwright_login_url}?email={user.email}&auth={cfg.playwright_auth_key}"
+    last_status = None
+    last_body_snippet = ""
     with httpx.Client(timeout=10.0) as client:
-        for _ in range(15):
+        for attempt in range(15):
             try:
                 r = client.get(url)
+                last_status = r.status_code
+                last_body_snippet = r.text[:200]
                 if r.status_code == 200:
                     m = _MAGIC_HREF_RE.search(r.text)
                     if m:
                         return m.group(1).replace("&amp;", "&")
-            except httpx.HTTPError:
-                pass
+            except httpx.HTTPError as e:
+                last_body_snippet = f"HTTPError: {e}"
             time.sleep(1)
+    print(
+        f"  [fetch_magic_link] no link found after 15 polls. "
+        f"last HTTP status: {last_status}; body snippet: {last_body_snippet!r}"
+    )
     return None

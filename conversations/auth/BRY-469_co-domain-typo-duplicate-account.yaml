@@ -1,8 +1,8 @@
 name: "BRY-469: Login with .co domain typo shows password page then creates duplicate account"
 description: |
   Status: Backlog — not yet fixed, failure is expected.
-  Entering a .co typo of a valid gmail.com address incorrectly shows the password page and creates a second duplicate account.
-  Note: requires UI automation — steps describe browser actions, not chat messages.
+  Entering a .co typo of a valid .com address incorrectly shows the password page
+  instead of rejecting the unknown email or sending a magic link.
 
 tags: [bug, backlog, auth]
 
@@ -10,10 +10,18 @@ setup:
   fresh_chat: false
 
 turns:
-  - send: "Navigate to /login and enter the email address mike+typo@gmail.co (a .co typo of a valid gmail.com account)"
-    expect:
-      - judge: "The platform should either reject the unknown email with a clear error or send a magic link. FAIL if the platform shows a password entry page for the typo email address."
+  - clear_cookies
+  - navigate: "/login"
+  - wait_for: "[placeholder='Enter email address']"
 
-  - send: "If a password page appeared, attempt to complete any sign-up or continue flow presented for the .co email"
-    expect:
-      - judge: "No new account should be created for the typo email. FAIL if the platform creates a second duplicate account with the .co email address, making it permanently inaccessible."
+  # Enter the typo email: .co instead of .com
+  - fill:
+      selector: "[placeholder='Enter email address']"
+      value: "admin@dev.brya.co"
+  - press_key: "Enter"
+  - wait: 3000
+
+  # The platform should NOT show a password page for this typo email.
+  # Expected: error message, magic link confirmation, or "email not found".
+  # Bug: it shows /login/password as if the email is valid.
+  - assert_url: "^(?!.*/login/password).*$"

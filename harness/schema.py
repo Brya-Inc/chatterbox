@@ -18,6 +18,8 @@ BROWSER_STEPS = {
     "refresh", "back", "wait", "wait_for",
     "scroll",
     "open_tab", "switch_tab", "close_tab",
+    "fetch_magic_link",
+    "clear_cookies",
 }
 ASSERT_STEPS = {
     "assert_visible", "assert_not_visible",
@@ -30,10 +32,10 @@ ASSERT_STEPS = {
 STEP_TYPES = SEND_STEPS | BROWSER_STEPS | ASSERT_STEPS
 
 # Steps that take no value (value must be None).
-NO_VALUE_STEPS = {"refresh", "back"}
+NO_VALUE_STEPS = {"refresh", "back", "clear_cookies"}
 # Steps whose value is a dict with named fields.
 DICT_VALUE_STEPS = {"fill", "assert_text", "scroll", "assert_count",
-                    "assert_no_overlap", "assert_style"}
+                    "assert_no_overlap", "assert_style", "fetch_magic_link"}
 
 # Operators accepted by `assert_text`.
 ASSERT_TEXT_OPS = {"contains", "starts_with", "ends_with", "equals"}
@@ -185,6 +187,9 @@ def _parse_turn(traw: Any, where: str) -> Turn:
         elif step_type == "assert_count":
             if "selector" not in value or "at_least" not in value:
                 raise SchemaError(f"{where}: 'assert_count' needs 'selector' and 'at_least' keys")
+        elif step_type == "fetch_magic_link":
+            if "email" not in value or "store_as" not in value:
+                raise SchemaError(f"{where}: 'fetch_magic_link' needs 'email' and 'store_as' keys")
     elif step_type == "wait":
         # wait: value is ms (int) or seconds (float).
         if not isinstance(value, (int, float)):
