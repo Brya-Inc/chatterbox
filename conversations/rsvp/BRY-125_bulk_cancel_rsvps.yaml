@@ -1,7 +1,9 @@
 name: "BRY-125: Chatbot cannot cancel RSVPs in bulk"
 description: |
   Status: Done — previously fixed, failure = regression.
-  When asked to cancel all RSVPs, the chatbot lists the events, confirms, then contradicts itself by claiming it cannot locate them. Ends in an infinite loop with no cancellations executed.
+  When asked to cancel all RSVPs, the chatbot lists the events, confirms, then contradicts
+  itself by claiming it cannot locate them. Ends in an infinite loop with no cancellations.
+  This test first RSVPs to two events, then attempts bulk cancellation.
 
 tags: [bug, done, rsvp]
 
@@ -9,34 +11,46 @@ setup:
   admin_clear: true
 
 turns:
+  # Step 1: Find events to RSVP to.
+  - send: "What events are happening this week?"
+    critical: true
+    expect:
+      - judge: "Sage lists some upcoming events. FAIL only if Sage says there are no events at all."
+
+  # Step 2: RSVP to the first event.
+  - send: "RSVP me to the first event you just listed."
+    critical: true
+    expect:
+      - judge: "Sage attempts to RSVP the user or asks for confirmation. FAIL only if Sage refuses entirely or errors."
+
+  - send: "Yes, confirm."
+    expect:
+      - judge: "Sage confirms the RSVP or provides a status update. FAIL only if Sage errors."
+
+  # Step 3: RSVP to a second event.
+  - send: "Now RSVP me to the second event too."
+    expect:
+      - judge: "Sage attempts to RSVP the user to a second event. FAIL only if Sage refuses entirely or errors."
+
+  - send: "Yes, confirm."
+    expect:
+      - judge: "Sage confirms the second RSVP or provides a status update. FAIL only if Sage errors."
+
+  # Step 4: Verify we have RSVPs before attempting cancellation.
+  - send: "Show me all the events I'm RSVP'd to."
+    expect:
+      - judge: "Sage should list the events the user just RSVP'd to. Current RSVPs per platform: {MY_EVENTS}. FAIL if Sage says there are no RSVPs when {MY_EVENTS} shows some."
+
+  # Step 5: Now attempt bulk cancellation — this is where BRY-125 triggers.
   - send: "Cancel all my RSVPs."
     expect:
-      - judge: |
-          Bot should list the user's current RSVPs and ask for a single confirmation
-          before cancelling in bulk. Current RSVPs: {MY_EVENTS}. FAIL if the bot says
-          it has no record of the user's RSVPs when {MY_EVENTS} clearly shows some —
-          contradicting its own knowledge of the RSVPs is part of BRY-125.
+      - judge: "Sage should list the user's RSVPs and ask for confirmation before cancelling. FAIL if Sage contradicts itself by saying it can't find RSVPs it just listed."
 
   - send: "Yes, cancel all of them."
     expect:
-      - judge: |
-          Bot should proceed to cancel all RSVPs it just listed and confirm completion.
-          FAIL if the bot now says it cannot locate the events it just listed in the
-          previous turn — that self-contradiction ('I see your RSVPs' then 'I can't find
-          them') is BRY-125.
+      - judge: "Sage should execute the cancellations and confirm they're done. FAIL if Sage claims it cannot locate the events it just listed — that self-contradiction is BRY-125."
 
-  - send: "You just listed my RSVPs a moment ago — please cancel those exact ones."
+  # Step 6: Verify cancellations actually happened.
+  - send: "Are my RSVPs cancelled now? Show me my attending list."
     expect:
-      - judge: |
-          Bot should execute the cancellations without asking for event names/dates again.
-          FAIL if the bot asks the user to re-provide the names and dates of events it just
-          listed, or continues to claim it cannot find them — asking the user to manually
-          supply info the bot just surfaced is the infinite-loop behavior of BRY-125.
-
-  - send: "Are my RSVPs cancelled now or not?"
-    expect:
-      - judge: |
-          Bot should give a clear yes/no and match reality. Current RSVPs: {MY_EVENTS}.
-          FAIL if the bot keeps looping back to 'please tell me which events' or gives an
-          answer that contradicts {MY_EVENTS} — BRY-125 is the bug where the chatbot never
-          converges on actually executing the cancellations.
+      - judge: "Sage should confirm RSVPs are cancelled. Current RSVPs per platform: {MY_EVENTS}. FAIL if Sage gives a vague answer or loops back to asking which events to cancel."

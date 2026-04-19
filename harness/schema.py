@@ -54,6 +54,7 @@ class Turn:
     type: str = "send"
     value: Any = ""
     expect: list[Matcher] = field(default_factory=list)
+    critical: bool = False  # if True, stop the test when this turn's judge checks fail
 
     @property
     def send(self) -> str:
@@ -212,7 +213,9 @@ def _parse_turn(traw: Any, where: str) -> Turn:
             )
         expect = _parse_matcher_list(traw["expect"], f"{where}.expect")
 
-    return Turn(type=step_type, value=value, expect=expect)
+    critical = bool(traw.get("critical", False))
+
+    return Turn(type=step_type, value=value, expect=expect, critical=critical)
 
 
 def load_conversation(path: Path) -> Conversation:

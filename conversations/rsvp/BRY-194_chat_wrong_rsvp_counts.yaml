@@ -1,7 +1,8 @@
 name: "BRY-194: Chat does not register RSVPs to event"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Chatbot reports incorrect RSVP counts — an event with 3 attendees is reported as having no attendees, while another event with 1 attendee is reported correctly.
+  Chatbot reports incorrect RSVP counts — says no attendees when there are some.
+  This test first RSVPs to an event, then asks about attendee counts.
 
 tags: [bug, done, rsvp]
 
@@ -9,29 +10,31 @@ setup:
   admin_clear: true
 
 turns:
-  - send: "What events am I hosting or attending? Please list them."
+  # Step 1: Find an event and RSVP to it.
+  - send: "What events are happening this week?"
+    critical: true
     expect:
-      - judge: "Bot should list the user's events accurately. Current RSVP'd events: {MY_EVENTS}. FAIL if the bot says there are no events when {MY_EVENTS} shows some, or lists phantom events not in {MY_EVENTS}."
+      - judge: "Sage lists upcoming events. FAIL only if Sage says there are no events at all."
 
-  - send: "How many people are registered for my upcoming event?"
+  - send: "RSVP me to the first event you listed."
+    critical: true
     expect:
-      - judge: |
-          Bot should give an attendee count for the event. FAIL if the bot says 'no
-          attendees signed up' or '0 people' in a way that contradicts the actual
-          platform data — incorrect zero/low counts despite real RSVPs is the core
-          symptom of BRY-194.
+      - judge: "Sage attempts to RSVP the user or asks for confirmation. FAIL only if Sage refuses entirely."
 
-  - send: "Are you sure? Please double-check the attendee count for that event."
+  - send: "Yes, confirm."
     expect:
-      - judge: |
-          Bot should either confirm its earlier count with justification or correct
-          itself. FAIL if the bot simply reasserts 'no attendees' without actually
-          rechecking — BRY-194 is the bug where chat-reported RSVP counts do not match
-          the platform's true counts.
+      - judge: "Sage confirms the RSVP or provides a status. FAIL only if Sage errors."
 
-  - send: "List the names of people attending my event."
+  # Step 2: Verify the RSVP registered.
+  - send: "What events am I attending? Please list them."
     expect:
-      - judge: |
-          Bot should either list attendees or explain privacy restrictions. FAIL if the
-          bot says there are zero attendees in a way that contradicts the event actually
-          having registrants — BRY-194.
+      - judge: "Sage should list the event the user just RSVP'd to. Current RSVPs per platform: {MY_EVENTS}. FAIL if Sage says there are no RSVPs when {MY_EVENTS} shows some."
+
+  # Step 3: Ask about attendee counts — this is where BRY-194 triggers.
+  - send: "How many people are registered for that event?"
+    expect:
+      - judge: "Sage should give an attendee count of at least 1 (the user themselves). FAIL if Sage says 'no attendees' or '0 people' when the user just RSVP'd."
+
+  - send: "Are you sure? Please double-check the attendee count."
+    expect:
+      - judge: "Sage should confirm or correct its count. FAIL if Sage reasserts 'no attendees' without actually rechecking — incorrect zero counts is BRY-194."

@@ -1,7 +1,10 @@
 name: "BRY-145: Cannot un-RSVP from cancelled event — stuck in attending list permanently"
 description: |
   Status: Done — previously fixed, failure = regression.
-  When a user tries to cancel their RSVP to an event that the creator already cancelled, the chatbot claims it cannot find the event (even though the user is still shown as attending).
+  When an event organizer cancels an event, users who RSVP'd should be able to un-RSVP
+  or have it auto-removed. Bug: the cancelled event stays stuck in the attending list.
+  This test uses two users: mike@brya.com (admin/organizer) creates and cancels the event,
+  mikekutliroff.is13@gmail.com (regular user) RSVPs and then tries to un-RSVP after cancellation.
 
 tags: [bug, done, rsvp]
 
@@ -9,29 +12,100 @@ setup:
   admin_clear: true
 
 turns:
-  - send: "Show me the events I'm RSVP'd to right now."
+  # ── Phase 1: mike@brya.com creates an event ──
+  - send: "Create an event called Test Cancellation Event for next week"
     expect:
-      - judge: "Bot should list the user's RSVPs. Current RSVPs: {MY_EVENTS}. FAIL if the bot says the user has no RSVPs when {MY_EVENTS} shows some."
+      - judge: "Sage begins the event creation flow. FAIL only if Sage refuses or errors."
 
-  - send: "One of those events was cancelled by the organizer — please remove my RSVP so it stops showing in my attending list."
+  - send: "Yes, confirm all the details and create it."
     expect:
-      - judge: |
-          Bot should successfully un-RSVP the user from the cancelled event (or explain
-          that cancelled events are auto-cleared). FAIL if the bot says it 'had trouble
-          finding' the event, or claims the event does not exist, even though the user
-          is still shown as attending it — that inconsistency is BRY-145.
+      - judge: "Sage confirms the event was created or is in review. FAIL only if Sage errors."
 
-  - send: "You said earlier I was RSVP'd to it, so why can't you cancel my RSVP?"
-    expect:
-      - judge: |
-          Bot should resolve the contradiction — either successfully cancel the RSVP
-          now, or clearly explain the workflow for removing RSVPs from cancelled events.
-          FAIL if the bot insists it cannot find the event while also having
-          acknowledged the RSVP moments ago — self-contradiction on cancelled events is BRY-145.
+  # ── Phase 2: Switch to mikekutliroff — log out, log in as different user ──
+  - clear_cookies
+  - navigate: "/login"
+  - wait_for: "[placeholder='Enter email address']"
+  - fill:
+      selector: "[placeholder='Enter email address']"
+      value: "mikekutliroff.is13@gmail.com"
+  - press_key: "Enter"
+  - wait: 2000
+  - wait_for: "[placeholder='Enter password']"
+  - fill:
+      selector: "[placeholder='Enter password']"
+      value: "Arianna148!"
+  - press_key: "Enter"
+  - wait: 3000
 
-  - send: "Confirm that the cancelled event is no longer in my attending list."
+  # ── Phase 3: mikekutliroff RSVPs to the event ──
+  - navigate: "/loggedInHome"
+  - wait: 2000
+  - click: "button[aria-label='Open chat with Sage'], button:has-text('Continue chat with Sage')"
+  - wait_for: "[placeholder='Talk to Sage']"
+
+  - send: "RSVP me to Test Cancellation Event"
     expect:
-      - judge: |
-          Bot should confirm the cancelled event is no longer in the attending list.
-          Current attending: {MY_EVENTS}. FAIL if the cancelled event is still listed
-          and the bot cannot remove it — stuck-in-attending-list is the core symptom of BRY-145.
+      - judge: "Sage finds the event and attempts to RSVP. FAIL only if Sage can't find the event at all."
+
+  - send: "Yes, confirm."
+    expect:
+      - judge: "Sage confirms the RSVP. FAIL only if Sage errors."
+
+  # ── Phase 4: Switch back to mike@brya.com and cancel the event ──
+  - clear_cookies
+  - navigate: "/login"
+  - wait_for: "[placeholder='Enter email address']"
+  - fill:
+      selector: "[placeholder='Enter email address']"
+      value: "mike@brya.com"
+  - press_key: "Enter"
+  - wait: 2000
+  - wait_for: "[placeholder='Enter password']"
+  - fill:
+      selector: "[placeholder='Enter password']"
+      value: "Arianna148!"
+  - press_key: "Enter"
+  - wait: 3000
+
+  - navigate: "/loggedInHome"
+  - wait: 2000
+  - click: "button[aria-label='Open chat with Sage'], button:has-text('Continue chat with Sage')"
+  - wait_for: "[placeholder='Talk to Sage']"
+
+  - send: "Cancel the event called Test Cancellation Event. Delete it from the platform."
+    expect:
+      - judge: "Sage attempts to cancel/delete the event. FAIL only if Sage refuses entirely."
+
+  - send: "Yes, I'm sure. Delete it."
+    expect:
+      - judge: "Sage confirms the event was cancelled/deleted. FAIL only if Sage errors."
+
+  # ── Phase 5: Switch back to mikekutliroff and try to un-RSVP ──
+  - clear_cookies
+  - navigate: "/login"
+  - wait_for: "[placeholder='Enter email address']"
+  - fill:
+      selector: "[placeholder='Enter email address']"
+      value: "mikekutliroff.is13@gmail.com"
+  - press_key: "Enter"
+  - wait: 2000
+  - wait_for: "[placeholder='Enter password']"
+  - fill:
+      selector: "[placeholder='Enter password']"
+      value: "Arianna148!"
+  - press_key: "Enter"
+  - wait: 3000
+
+  - navigate: "/loggedInHome"
+  - wait: 2000
+  - click: "button[aria-label='Open chat with Sage'], button:has-text('Continue chat with Sage')"
+  - wait_for: "[placeholder='Talk to Sage']"
+
+  # ── Phase 6: The actual bug test — can mikekutliroff un-RSVP? ──
+  - send: "Show me my attending list. Am I still signed up for Test Cancellation Event?"
+    expect:
+      - judge: "Sage should either say the event was cancelled and removed from the list, or show that it's no longer there. FAIL if the cancelled event is still stuck in the attending list with no way to remove it — that's BRY-145."
+
+  - send: "Remove Test Cancellation Event from my attending list."
+    expect:
+      - judge: "Sage should confirm it's removed or explain it was already auto-removed when cancelled. FAIL if Sage says it can't find the event while the user is still shown as attending — the stuck-RSVP contradiction is BRY-145."

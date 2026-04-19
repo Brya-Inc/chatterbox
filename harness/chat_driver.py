@@ -212,8 +212,7 @@ class ChatDriver:
         time.sleep(2)
 
         # Navigate back to home cleanly
-        self.page.goto(self.cfg.base_url + "/loggedInHome")
-        self.page.wait_for_load_state("networkidle")
+        self._safe_goto_home()
         time.sleep(1)
         print("  [admin] chat cleared and ready")
 
@@ -223,10 +222,24 @@ class ChatDriver:
         reopen the chat. Does NOT wipe server-side chat history (that requires
         admin access), but gives tests a clean UI state to work from.
         """
-        self.page.goto(self.cfg.base_url + "/loggedInHome")
-        self.page.wait_for_load_state("networkidle")
+        self._safe_goto_home()
         time.sleep(1)
         print("  [admin] chat reset via page reload (server-side history not cleared)")
+
+    def _safe_goto_home(self) -> None:
+        """Navigate to /loggedInHome, handling redirects that Firefox/WebKit
+        treat as errors but Chrome follows silently."""
+        try:
+            self.page.goto(self.cfg.base_url + "/loggedInHome", wait_until="domcontentloaded")
+        except Exception as e:
+            err = str(e).lower()
+            if "ns_binding_aborted" in err or "interrupted" in err or "aborted" in err:
+                try:
+                    self.page.wait_for_load_state("domcontentloaded", timeout=10000)
+                except Exception:
+                    pass
+            else:
+                raise
 
     def _dismiss_inline_checkin(self) -> None:
         """Dismiss any overlay/prompt that blocks chat entry points.

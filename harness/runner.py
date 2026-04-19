@@ -126,8 +126,7 @@ class Runner:
         page = context.new_page()
         try:
             ensure_logged_in(context, page, self.cfg, user, browser_name)
-            page.goto(f"{self.cfg.base_url}/loggedInHome")
-            page.wait_for_load_state("load")
+            _safe_goto(page, f"{self.cfg.base_url}/loggedInHome")
 
             driver = ChatDriver(page, self.cfg)
             driver.open_chat()
@@ -143,8 +142,7 @@ class Runner:
                 my_events = scrape_my_rsvps(page)
             elif conv.setup.fresh_chat:
                 target = conv.url or f"{self.cfg.base_url}/loggedInHome"
-                page.goto(target)
-                page.wait_for_load_state("load")
+                _safe_goto(page, target)
                 driver.open_chat()
                 events = scrape_home_events(page)
                 my_events = scrape_my_rsvps(page)
@@ -278,6 +276,11 @@ class Runner:
                         )
                     )
                     transcript.append((turn.value, response))
+
+                    # If this turn is marked critical and any check failed, stop the test.
+                    if turn.critical and any(not c.passed and not c.skipped for c in checks):
+                        print(f"  [Turn {i}] ⛔ critical turn failed — stopping test")
+                        return result
                 else:
                     # Browser action or page-state assertion — run against the currently active tab.
                     active_page = tabs[current_tab]
@@ -312,6 +315,24 @@ class Runner:
             print(f"\n  [final] {conv.final.type}: {tag} — {_first_line(result.final_check.detail)}")
 
         return result
+
+
+def _safe_goto(page, url: str) -> None:
+    """Navigate to a URL, handling mid-navigation redirects that Firefox/WebKit
+    treat as errors (NS_BINDING_ABORTED, navigation interrupted) but Chrome
+    follows silently."""
+    try:
+        page.goto(url, wait_until="domcontentloaded")
+    except Exception as e:
+        err = str(e).lower()
+        if "ns_binding_aborted" in err or "interrupted" in err or "aborted" in err:
+            # Redirect happened — page landed somewhere else. Wait for it to settle.
+            try:
+                page.wait_for_load_state("domcontentloaded", timeout=10000)
+            except Exception:
+                pass
+        else:
+            raise
 
 
 def _first_line(s: str) -> str:
@@ -351,8 +372,7 @@ def _execute_non_send(page, turn: Turn, cfg: Config, last_send_ms: int | None = 
     # Browser navigation / interaction
     if t == "navigate":
         url = v if v.startswith("http") else f"{cfg.base_url}{v if v.startswith('/') else '/' + v}"
-        page.goto(url)
-        page.wait_for_load_state("domcontentloaded")
+        _safe_goto(page, url)
         return (f"navigate {url}", None)
 
     if t == "click":
