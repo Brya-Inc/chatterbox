@@ -38,17 +38,10 @@ def ensure_logged_in(
         print(f"  [auth] already authenticated as {user.email} (landed at {page.url})")
         return
 
-    if cfg.playwright_login_url and cfg.playwright_auth_key and user.email:
-        try:
-            _login_magic_link(page, cfg, user)
-        except RuntimeError:
-            if user.password:
-                print(f"  [auth] magic-link failed for {user.email}, falling back to password login")
-                page.goto(f"{cfg.base_url}/login")
-                page.wait_for_load_state("domcontentloaded")
-                _login_password(page, cfg, user)
-            else:
-                raise
+    if cfg.playwright_login_url and cfg.playwright_auth_key and user.email and not user.password:
+        # Magic-link login only for password-less accounts. Accounts with passwords
+        # always get 404 from the magic-link endpoint, wasting 15 seconds of polling.
+        _login_magic_link(page, cfg, user)
     elif user.email and user.password:
         _login_password(page, cfg, user)
     else:
