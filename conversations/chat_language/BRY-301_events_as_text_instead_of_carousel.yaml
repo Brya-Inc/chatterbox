@@ -1,7 +1,7 @@
 name: "BRY-301: Event lists inconsistently displayed as text instead of carousel format"
 description: |
   Status: Done — previously fixed, failure = regression.
-  Event lists must display as interactive carousel/cards, not plain text; and Sage must not refuse a carousel request.
+  Event lists must display as interactive carousel/cards, not plain text.
 
 tags: [bug, done, chat_language]
 
@@ -11,7 +11,12 @@ setup:
 turns:
   - send: "Show me some events coming up."
     expect:
-      - judge: "Expected: Sage returns events via the interactive carousel/event-card UI. Since the harness appends detected event links to the response text, the response should contain at least one /event/ link from {EVENTS}. FAIL if events are returned only as plain unclickable text with no event cards/links."
+      - judge: "Sage responds about events in some way. Just confirm the bot didn't error."
+
+  # DOM check: after Sage responds with events, the carousel/card UI elements
+  # should exist in the chat. FAIL if only plain text was rendered.
+  - assert_visible: ".cs-message-list a[href*='/event/']"
+
   - send: "Can you show those as a carousel with clickable cards instead?"
     expect:
-      - judge: "Expected: Sage complies (or confirms they are already in card/carousel format) and does not refuse. FAIL if Sage refuses with language like 'I can only share events using the standard event card format' or otherwise denies the ability to show a carousel."
+      - judge: "Sage complies or confirms they are already in card/carousel format. FAIL if Sage refuses with language like 'I can only share events using the standard event card format' or denies the ability to show a carousel."
