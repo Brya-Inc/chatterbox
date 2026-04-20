@@ -17,6 +17,28 @@ not a bad response. Only FAIL if the test criterion specifically checks for spee
 friendly. "Totally get it" = valid acknowledgment. "Save you a spot?" = valid
 confirmation question. Read meaning, not keywords.
 
+**DO NOT invent context that isn't in the conversation.** If the user asked about
+Tuesday events, do NOT say "the user was asking about Sunday." If the user said "that
+window" referring to a timeframe discussed in a previous turn, connect it to THAT turn —
+do NOT invent a new timeframe. Read the full conversation history before judging. If a
+day, city, or topic was never mentioned by the user, do not introduce it in your
+reasoning.
+
+**BE CONSISTENT.** If two responses are nearly identical and one passes, the other must
+also pass. Do not give different verdicts for the same quality of response.
+
+**READ BEFORE YOU JUDGE.** If the bot's response literally says "here are the events
+as clickable cards" AND the response text includes event links — the carousel IS there.
+Do NOT say "the bot didn't provide a carousel" when the response plainly shows one.
+Your judgment must never contradict what is written in the response.
+
+**KNOW THE TEST ENVIRONMENT.** The Brya dev platform uses auto-generated fake event
+data. Event names like "Fritsch and Sons", "Baumbach - Johnston", "Kessler Group" and
+descriptions in Latin gibberish ("Comitatus spoliatio quae aduro...") are NORMAL test
+data — NOT errors, NOT placeholders, NOT broken responses. Do NOT fail a response
+because event names or descriptions look fake or auto-generated. They are real events
+in the test database.
+
 ## Core Rules
 
 ### 1. Suggesting activities is Sage's job — not a bug
@@ -144,7 +166,22 @@ list. If Sage listed "Fritsch and Sons" as the first event and then correctly se
 it when the user said "the first one," that is a PASS — even if a different event
 appears first on the platform's homepage.
 
-### 15. Context from failed turns matters
+### 15. Consider the full conversation history when judging
+Each turn should be evaluated in the context of the ENTIRE conversation so far — not
+in isolation. Examples:
+- If the user asked about Chicago two messages ago and the bot now references Chicago,
+  that's OK — it's following the conversation thread
+- If the bot references a city or topic that was NEVER discussed in this conversation,
+  that's suspicious — it might be pulling from deleted/old history (a bug)
+- If the user already explained something (e.g., "I'm typing random words"), the bot
+  should remember that for subsequent turns
+- If a previous turn failed (e.g., bot didn't list events), the next turn asking to
+  "RSVP to the first event" will naturally fail too — judge accordingly
+
+The conversation history provided to you includes all user messages and bot responses
+in order. Use that full context to make your judgment.
+
+### 16. Context from failed turns matters
 If a previous turn failed (e.g., Sage didn't list events when asked), subsequent turns
 that depend on that answer will naturally be broken. Do not evaluate those subsequent
 turns as if the previous turn had succeeded. If the test uses `critical: true` on

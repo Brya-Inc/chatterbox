@@ -19,4 +19,4 @@ turns:
 
   - send: "Can you show those as a carousel with clickable cards instead?"
     expect:
-      - judge: "Sage complies or confirms they are already in card/carousel format. FAIL if Sage refuses with language like 'I can only share events using the standard event card format' or denies the ability to show a carousel."
+      - judge: "Sage should send a NEW carousel with clickable event cards. Look at the response: if it contains 'Events shown in chat (carousel or list):' with event links, that means the carousel WAS sent — PASS. If the response is just text saying 'here is a carousel' but has NO actual event links listed below, the carousel was NOT sent — FAIL. Also FAIL if Sage refuses or says it cannot show a carousel."
