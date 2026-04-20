@@ -21,6 +21,7 @@ def run_matcher(
     bot_msg: str,
     judge: Judge,
     ctx: JudgeContext,
+    chat_history: str = "",
 ) -> CheckResult:
     t = matcher.type
     v = matcher.value
@@ -43,7 +44,7 @@ def run_matcher(
     if t == "judge":
         if not judge.enabled:
             return CheckResult("judge", True, "skipped (no OPENAI_API_KEY)", skipped=True)
-        passed, detail = judge.evaluate(user_msg, bot_msg, v, ctx)
+        passed, detail = judge.evaluate(user_msg, bot_msg, v, ctx, chat_history)
         return CheckResult("judge", passed, detail)
 
     return CheckResult(t, False, f"unknown matcher type {t!r}")

@@ -261,10 +261,17 @@ class Runner:
                     preview = response[:120] + ("…" if len(response) > 120 else "")
                     print(f"  [Turn {i}] ◀  {preview!r}  ({last_send_ms}ms)")
 
+                    # Capture full chat history visible on screen for the judge.
+                    chat_history = ""
+                    try:
+                        chat_history = driver.full_chat_history()
+                    except Exception:
+                        pass
+
                     ctx = JudgeContext(events=ctx.events, my_events=scrape_my_rsvps(driver.page))
                     checks: list[CheckResult] = []
                     for matcher in turn.expect:
-                        check = run_matcher(matcher, turn.value, response, self.judge, ctx)
+                        check = run_matcher(matcher, turn.value, response, self.judge, ctx, chat_history)
                         checks.append(check)
                         tag = "SKIP" if check.skipped else ("PASS" if check.passed else "FAIL")
                         print(f"  [Turn {i}] {matcher.type}: {tag} — {_first_line(check.detail)}")
@@ -310,7 +317,12 @@ class Runner:
             full_user = "\n---\n".join(u for u, _ in transcript)
             full_bot = "\n---\n".join(b for _, b in transcript)
             ctx = JudgeContext(events=ctx.events, my_events=scrape_my_rsvps(driver.page))
-            result.final_check = run_matcher(conv.final, full_user, full_bot, self.judge, ctx)
+            final_history = ""
+            try:
+                final_history = driver.full_chat_history()
+            except Exception:
+                pass
+            result.final_check = run_matcher(conv.final, full_user, full_bot, self.judge, ctx, final_history)
             tag = "SKIP" if result.final_check.skipped else ("PASS" if result.final_check.passed else "FAIL")
             print(f"\n  [final] {conv.final.type}: {tag} — {_first_line(result.final_check.detail)}")
 

@@ -45,6 +45,7 @@ class Judge:
         bot_msg: str,
         criterion: str,
         ctx: JudgeContext,
+        chat_history: str = "",
     ) -> tuple[bool, str]:
         assert self.client is not None
         filled = self.resolve_placeholders(criterion, ctx)
@@ -54,6 +55,12 @@ class Judge:
             context_block += "Events currently listed on the platform:\n" + format_events(ctx.events) + "\n\n"
         if ctx.my_events:
             context_block += "Events the user has RSVP'd to:\n" + format_events(ctx.my_events) + "\n\n"
+        if chat_history:
+            context_block += (
+                "Full chat history visible on screen (may include messages from before "
+                "this test — Sage can see all of these):\n"
+                "---\n" + chat_history + "\n---\n\n"
+            )
 
         user_prompt = (
             f"{context_block}"

@@ -400,6 +400,28 @@ class ChatDriver:
             f".map(el => el.innerText.trim()).filter(Boolean)"
         )
 
+    def full_chat_history(self) -> str:
+        """Get the full visible chat history — all messages from all conversations
+        currently showing in the chat UI. Includes messages from before this test
+        if the chat wasn't cleared. Returns formatted text the judge can read."""
+        return self.page.evaluate("""
+            () => {
+                const list = document.querySelector('.cs-message-list');
+                if (!list) return '';
+                const messages = [];
+                for (const el of list.children) {
+                    const text = el.innerText.trim();
+                    if (!text) continue;
+                    const isBot = el.querySelector('.bg-tertiary') !== null
+                               || el.classList.contains('bg-tertiary');
+                    const role = isBot ? 'Sage' : 'User';
+                    messages.push(role + ': ' + text.slice(0, 300));
+                }
+                // Return last 30 messages to keep it manageable.
+                return messages.slice(-30).join('\\n');
+            }
+        """)
+
     # ------------------------------------------------------------------
     # in-chat event cards (carousel or list)
     # ------------------------------------------------------------------
