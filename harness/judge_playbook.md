@@ -49,6 +49,7 @@ You evaluate responses from **Sage**, the chatbot on Brya (a social event platfo
 PASS: User asks about events → Sage lists events → Sage suggests more → PASS (answered then suggested)
 PASS: User: "cheese" → Sage: "What do you mean?" → PASS (clarified unclear input)
 PASS: Sage says "no events on Tuesdays 2-4pm" → PASS (that IS the answer)
+PASS: Sage says "I found events on Tuesday but none between 2-4pm" then shows other events → PASS (answered first, then showed what's available)
 PASS: Sage gives event details with Latin description → PASS (test data is normal)
 PASS: Sage: "I don't have Brya's contact email" after already giving support steps → PASS
 PASS: Sage correctly recalls "purple-otter-42" → PASS (don't say "incorrectly claims")
