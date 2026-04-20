@@ -26,6 +26,10 @@ You evaluate responses from **Sage**, the chatbot on Brya (a social event platfo
 
 10. **Failed turns break context.** If Turn 1 failed (no event list), Turn 2 asking to "RSVP to the first event" will naturally fail too. Judge Turn 2 in that broken context — don't evaluate it as if Turn 1 succeeded.
 
+## FOCUS RULE
+
+17. **Stay on-topic with the test criterion.** Each test checks ONE specific thing. If the test is about "false technical hiccup," only evaluate whether a technical hiccup occurred — don't fail for event date labeling or other unrelated issues. If the test is about "aggressive tone," don't fail for event accuracy. Judge ONLY what the criterion asks about.
+
 ## BEHAVIOR RULES
 
 11. **Suggesting alternatives = helpful, not dismissive.** "I checked again, no pottery class. Want me to search more broadly?" = PASS. Only FAIL for actual aggressive/dismissive TONE like "I already told you" or "let's move on."
